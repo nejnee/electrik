@@ -23,14 +23,12 @@ button{font-family:inherit;cursor:pointer}
 aside{display:flex;flex-direction:column;gap:12px}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
 .box h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600}
-.tools{display:flex;flex-direction:column;gap:6px}
-.tool{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1.5px solid var(--line);color:var(--text);border-radius:10px;padding:7px 10px;text-align:left;font-size:14px}
-.tool .ic{font-size:20px;width:26px;text-align:center}
-.tool small{display:block;color:var(--muted);font-size:11px;margin-top:1px}
-.tool .k{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tool{position:relative;display:flex;align-items:center;gap:7px;background:var(--panel2);border:1.5px solid var(--line);color:var(--text);border-radius:10px;padding:8px 8px;text-align:left;font-size:13px}
+.tool .ic{font-size:18px;width:22px;text-align:center}
+.tool .k{position:absolute;top:2px;right:5px;font-family:'JetBrains Mono',monospace;font-size:9px;color:#5d6a7a}
 .tool.active{border-color:var(--accent);background:#2a2614}
-.tool.on{border-color:#ff8a1f;background:#2b1c10}
-.tool.disabled{display:none}
+.tdesc{font-size:12.5px;color:var(--muted);margin-top:9px;line-height:1.4;min-height:35px}
 .meter{background:#0a0e13;border:2px solid #333d4a;border-radius:12px;padding:10px}
 .lcd{background:#a9c48a;color:#16210c;border-radius:6px;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;text-align:right;min-height:50px;box-shadow:inset 0 2px 6px rgba(0,0,0,.35)}
 .meter .mode{font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
@@ -40,8 +38,14 @@ aside{display:flex;flex-direction:column;gap:12px}
 .goals li .m{width:16px;flex:none}
 .goals li.ok{color:var(--ok)}
 .board{background:radial-gradient(ellipse at top,#172231,#0d1117 75%);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.board.thermal{background:#05070c}
 svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
+.under{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:12px}
+.boxp{font-size:13.5px;line-height:1.45}
+.boxp .bad,.bad{color:#ff8a8a}
+.steps{margin:7px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.steps li{color:var(--muted)}
+.steps li.cur{color:var(--accent);font-weight:600}
+.steps li.ok{color:var(--ok)}
 .log{font-size:13.5px;color:var(--muted);min-height:48px;display:flex;flex-direction:column;gap:3px;margin-top:10px;padding:0 4px}
 .log .new{color:var(--text)}
 .log .bad{color:#ff8a8a}
@@ -75,8 +79,7 @@ svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:no
 .smoke circle:nth-child(2){animation-delay:.5s}
 .smoke circle:nth-child(3){animation-delay:1s}
 @keyframes smoke{0%{transform:translateY(0) scale(.6);opacity:.85}100%{transform:translateY(-34px) scale(1.8);opacity:0}}
-.thermal .loadg{opacity:.4}
-@media (max-width:880px){.wrap{grid-template-columns:1fr}aside{order:2}}
+@media (max-width:880px){.wrap{grid-template-columns:1fr}aside{order:2}.under{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -97,23 +100,24 @@ svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:no
     <div class="box">
       <h3>Инструменты</h3>
       <div class="tools" id="tools"></div>
+      <div class="tdesc" id="tdesc"></div>
     </div>
     <div class="box">
       <h3>Мультиметр</h3>
       <div class="meter">
         <div class="lcd" id="lcd">—</div>
         <div class="mode" id="lcdMode">&nbsp;</div>
-        <div class="expl" id="lcdExpl">Выбери прибор и щёлкни по схеме.</div>
+        <div class="expl" id="lcdExpl">Выбери инструмент и щёлкни по схеме.</div>
       </div>
-    </div>
-    <div class="box">
-      <h3>Задача</h3>
-      <ul class="goals" id="goals"></ul>
     </div>
     <button class="hbtn hint-btn" id="hintBtn">💡 Подсказка (−10 с)</button>
   </aside>
   <main>
     <div class="board" id="board"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="under">
+      <div class="box"><h3>Распаечная коробка</h3><div class="boxp" id="boxp"></div></div>
+      <div class="box"><h3>Задача</h3><ul class="goals" id="goals"></ul></div>
+    </div>
     <div class="log" id="log"></div>
   </main>
 </div>
@@ -123,7 +127,7 @@ svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:no
 
 <script>
 // ===== Физика =====
-const E=230, RINT=0.25, RSEG=0.15, RLOOSE=0.9, RSHORT=0.05, IMAX=16, ITRIP=63, REPAIR_T=2.5;
+const E=230, RINT=0.25, RSEG=0.15, RLOOSE=0.9, RSHORT=0.05, IMAX=16, ITRIP=63;
 const LT={
   lamp:{n:'Лампа',ic:'💡',P:60},
   tv:{n:'Телевизор',ic:'📺',P:120},
@@ -135,40 +139,59 @@ const LT={
   washer:{n:'Стиралка',ic:'🧺',P:2000},
   fen:{n:'Фен',ic:'💨',P:1200},
 };
+const TOOLS=[
+ {id:'volt',ic:'🔍',n:'Мультиметр',d:'Автомат включён — меряет напряжение. Выключен — сопротивление («прозвонка»). Щёлкай по точкам и коробкам.'},
+ {id:'amp',ic:'🧲',n:'Клещи',d:'Токоизмерительные клещи: ток в кабеле. Щёлкай по проводу между коробками.'},
+ {id:'drill',ic:'🔩',n:'Шуруповёрт',d:'Снять или поставить крышку распаечной коробки.'},
+ {id:'screw',ic:'🪛',n:'Отвёртка',d:'Ослабить или затянуть винт клеммы.'},
+ {id:'cut',ic:'✂️',n:'Кусачки',d:'Откусить обгоревшие или оплавленные концы проводов.'},
+ {id:'pliers',ic:'🗜️',n:'Плоскогубцы',d:'Скрутить провода. В исправной коробке — разъединить или соединить скрутку (для прозвонки).'},
+ {id:'brush',ic:'🧹',n:'Щётка',d:'Очистить контакты от окислов, копоти и нагара.'},
+ {id:'tape',ic:'🩹',n:'Изолента',d:'Заизолировать скрутку, чтобы провода не касались друг друга.'},
+];
+const TI={}; TOOLS.forEach(t=>TI[t.id]=t);
+const PROCS={
+ break:{desc:'Скрутка перегорела, провода разошлись — это обрыв.',
+   steps:[['cut','откусить обгоревшие концы',1.0],['pliers','скрутить провода заново',1.4],['tape','заизолировать скрутку',1.2]]},
+ short:{desc:'Изоляция оплавилась, фаза коснулась нуля — короткое замыкание. Всё в копоти.',
+   steps:[['cut','вырезать оплавленные концы',1.0],['brush','очистить копоть и нагар',1.4],['pliers','скрутить провода заново',1.4],['tape','заизолировать каждую скрутку',1.2]]},
+ loose:{desc:'Винт клеммы разболтался, контакт окислился и почернел — плохой контакт.',
+   steps:[['screw','ослабить винт клеммы',1.0],['brush','зачистить окислы до блеска',1.4],['screw','плотно затянуть винт',1.0]]},
+};
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 
 const LEVELS=[
-{title:'Тёмная спальня',tag:'Обрыв провода',time:90,tools:['volt','repair'],
- story:'23:40, звонок: «В спальне не горит свет и не работает телевизор!» Похоже, где-то в стене оборвался провод.',
- lesson:`<b>Напряжение</b> похоже на давление воды в трубе: от щитка в провод «давит» 230 вольт (В).<br>Если провод <b>оборван</b>, за обрывом давления нет, и мультиметр покажет <b>0 В</b>.<br><br>🔍 Возьми мультиметр и щёлкай по кружочкам-точкам на проводе слева направо. Обрыв там, где 230 В сменяется на 0.<br>🔧 Чтобы заменить кусок провода, щёлкни по нему ремонтом.<br>⚠️ <b>Сначала выключи автомат</b> на щитке (зелёный рычажок), иначе ударит током. После ремонта включи его обратно.`,
- recap:'Обрыв находят по напряжению: до обрыва оно есть, после — ноль. И никогда не чини провод под напряжением.',
+{title:'Тёмная спальня',tag:'Обрыв провода',time:120,
+ story:'23:40, звонок: «В спальне не горит свет и не работает телевизор!» Похоже, где-то перегорела скрутка.',
+ lesson:`<b>Напряжение</b> похоже на давление воды в трубе: от щитка в провод «давит» 230 вольт (В). Если провод <b>оборван</b>, за обрывом давления нет, и мультиметр покажет <b>0 В</b>.<br><br>Квадратики на линии — это <b>распаечные коробки</b>. В них провода соединены скрутками, и ломается чаще всего именно там.<br><br>🔍 Мультиметром щёлкай по коробкам слева направо. Неисправна <b>первая коробка, где 0 В</b>.<br><br><b>Ремонт:</b> ⚠️ выключи автомат на щитке → 🔩 сними крышку → ✂️ откуси обгоревшее → 🗜️ скрути → 🩹 заизолируй → 🔩 закрой крышку → включи автомат.`,
+ recap:'Обрыв находят по напряжению: до него оно есть, после — ноль. Ремонт в коробке делают только при выключенном автомате.',
  make:()=>[{room:'Спальня',n:4,loads:[['lamp',2,1],['tv',4,1]],fault:{type:'break',seg:rnd(0,3)}}]},
 
-{title:'Искры на кухне',tag:'Короткое замыкание',time:100,tools:['volt','repair','thermal'],
+{title:'Искры на кухне',tag:'Короткое замыкание',time:150,
  story:'На кухне что-то хлопнуло, запахло гарью, и автомат выбило. Свет на кухне погас.',
- lesson:`<b>Короткое замыкание (КЗ)</b>: изоляция повредилась, и ток пошёл в обход приборов, прямо в обратный провод. Сопротивление на этом пути почти нулевое, поэтому <b>ток огромный</b> — сотни ампер. Автомат это чувствует и выключается.<br><br>⚠️ <b>Не включай автомат, пока не починишь!</b> От каждого включения провод раскаляется ещё сильнее, а на втором-третьем будет пожар.<br><br>🌡️ Включи <b>тепловизор</b>. Огромный ток шёл от щитка до места замыкания, поэтому эти провода горячие, а дальше — холодные. Повреждён <b>последний горячий</b> участок, он самый горячий.`,
- recap:'При КЗ ток идёт «коротким путём» мимо приборов и становится огромным. Повреждённое место выдаёт себя нагревом.',
+ lesson:`<b>Короткое замыкание (КЗ)</b>: изоляция оплавилась, и фаза коснулась нуля. Ток пошёл в обход приборов, поэтому он <b>огромный</b>. Автомат выключился, чтобы спасти проводку.<br>⚠️ <b>Не включай автомат, пока не починишь</b>: каждое включение раскаляет провода, и на втором будет пожар.<br><br>Место КЗ ищут <b>прозвонкой</b>. При выключенном автомате мультиметр меряет <b>сопротивление</b>:<br>• щёлкни в начале линии: около <b>0 Ом</b> означает, что КЗ есть;<br>• сними крышку средней коробки 🔩 и разъедини скрутку 🗜️ — так ты отрежешь дальнюю часть линии;<br>• измерь снова в начале линии. Если всё ещё 0 Ом, КЗ до этой коробки, если нет — после.<br><br><b>Ремонт:</b> ✂️ вырезать оплавленное → 🧹 очистить копоть → 🗜️ скрутить → 🩹 заизолировать. Потом соедини разъединённую скрутку 🗜️, закрой все крышки 🔩 и включи автомат.`,
+ recap:'При КЗ ток идёт «коротким путём» мимо приборов. Место находят прозвонкой: делят линию пополам и меряют сопротивление.',
  make:()=>[{room:'Коридор',n:3,loads:[['lamp',3,1]]},
            {room:'Кухня',n:5,loads:[['lamp',1,1],['fridge',3,1],['kettle',5,0,0]],fault:{type:'short',seg:rnd(1,3)},tripped:true}]},
 
-{title:'Все включили сразу',tag:'Перегрузка',time:100,tools:['volt','amp','repair','thermal'],
- story:'К соседям пришли гости. На кухне одновременно работают чайник, обогреватель и микроволновка… а провода начинают теплеть.',
- lesson:`<b>Ток</b> — это сколько электричества протекает по проводу, его меряют в амперах (А). Каждый прибор берёт свой ток: <b>мощность = напряжение × ток</b>. Чайнику на 2000 Вт нужно около 9 А.<br><br>Провод в доме рассчитан на <b>16 А</b>. Если ток больше, провод <b>греется</b>, а старые пробки в этом доме на перегрузку не реагируют.<br><br>🧲 <b>Клещами</b> измерь ток в проводе. Выключи лишние приборы кнопкой рядом с ними. Приборы со звёздочкой ★ жильцам нужны, их оставь.`,
- recap:'Токи всех включённых приборов складываются. Больше 16 А провод не выдержит, поэтому мощные приборы лучше не включать вместе на одной линии.',
+{title:'Все включили сразу',tag:'Перегрузка',time:100,
+ story:'К соседям пришли гости. На кухне одновременно работают чайник, обогреватель и микроволновка, и запахло горячей изоляцией.',
+ lesson:`<b>Ток</b> — это сколько электричества течёт по проводу. Его меряют в амперах (А). Каждый прибор берёт свой ток: <b>мощность = напряжение × ток</b>. Чайнику на 2000 Вт нужно около 9 А.<br><br>Провод в доме рассчитан на <b>16 А</b>. Если ток больше, провод <b>греется</b>, а старые пробки в этом доме на перегрузку не реагируют. Первый признак — запах и дымок.<br><br>🧲 <b>Клещами</b> измерь ток в кабеле. Выключи лишние приборы кнопкой рядом с ними. Приборы со звёздочкой ★ жильцам нужны, их оставь.`,
+ recap:'Токи всех включённых приборов складываются. Больше 16 А провод не выдерживает, поэтому мощные приборы не включают вместе на одной линии.',
  make:()=>[{room:'Кухня',n:5,loads:[['lamp',1,1],['kettle',2,1],['heater',3,0],['micro',4,0],['fridge',5,1]],preheat:30},
            {room:'Комната',n:3,loads:[['lamp',2,1],['pc',3,0]]}]},
 
-{title:'Мигающий свет',tag:'Плохой контакт',time:120,tools:['volt','amp','repair','thermal'],
- story:'«В гостиной мигает свет, а из розетки пахнет пластиком». Где-то ослаб контакт.',
- lesson:`<b>Сопротивление</b> — это то, насколько провод мешает току. У исправного провода оно крошечное. Если контакт ослаб, сопротивление растёт, и на этом месте <b>теряется напряжение и выделяется тепло</b>. Свет мигает, а контакт может расплавиться.<br><br>🔍 Измерь мультиметром две соседние точки. На исправном участке напряжение падает примерно на 1 В, а на плохом — на несколько вольт.<br>🌡️ Тепловизор тоже покажет горячее место.<br>💡 Если греется слишком быстро, выключи мощный прибор: меньше ток — меньше нагрев.`,
- recap:'Нагрев зависит и от тока, и от сопротивления. Плохой контакт — частая причина пожаров в старых домах.',
+{title:'Мигающий свет',tag:'Плохой контакт',time:150,
+ story:'«В гостиной мигает свет, а из коробки над дверью пахнет пластиком». Где-то ослаб контакт.',
+ lesson:`<b>Сопротивление</b> — это то, насколько провод мешает току. У хорошего контакта оно крошечное. Если винт клеммы ослаб и контакт окислился, сопротивление растёт: здесь <b>теряется напряжение и выделяется тепло</b>. Свет мигает, а контакт может расплавиться.<br><br>🔍 Измерь мультиметром две соседние точки. На исправном участке напряжение падает примерно на 1 В, а перед плохой коробкой — на несколько вольт.<br>💡 Если греется слишком быстро, выключи мощный прибор: меньше ток — меньше нагрев.<br><br><b>Ремонт:</b> выключи автомат → 🔩 крышка → 🪛 ослабить винт → 🧹 зачистить окислы → 🪛 затянуть → 🔩 закрыть.`,
+ recap:'Нагрев зависит и от тока, и от сопротивления. Разболтанный, окисленный контакт — частая причина пожаров в старых домах.',
  make:()=>[{room:'Коридор',n:3,loads:[['lamp',2,1]]},
            {room:'Гостиная',n:5,loads:[['lamp',1,1],['tv',3,1],['heater',5,1]],fault:{type:'loose',seg:rnd(0,3)}},
            {room:'Детская',n:4,loads:[['lamp',2,1],['pc',4,0]]}]},
 
-{title:'Ночная смена',tag:'Всё сразу',time:210,tools:['volt','amp','repair','thermal'],
+{title:'Ночная смена',tag:'Всё сразу',time:270,
  story:'Худшая ночь в доме: обрыв, замыкание, перегрузка и плохой контакт одновременно. Первым делом займись тем, что греется!',
- lesson:`Тут пригодится всё, что ты уже знаешь:<br>• <b>Обрыв</b>: после него 0 В.<br>• <b>КЗ</b>: автомат выбило, провода до места замыкания горячие.<br>• <b>Перегрузка</b>: ток больше 16 А, выключи лишнее.<br>• <b>Плохой контакт</b>: большое падение напряжения на одном участке и нагрев.<br><br>Расставь приоритеты: то, что может загореться, — первым делом.`,
+ lesson:`Тут пригодится всё, что ты уже знаешь:<br>• <b>Обрыв</b>: после неисправной коробки 0 В.<br>• <b>КЗ</b>: автомат выбило, ищи прозвонкой.<br>• <b>Перегрузка</b>: ток больше 16 А, выключи лишнее.<br>• <b>Плохой контакт</b>: большое падение напряжения и дымок.<br><br>Расставь приоритеты: то, что может загореться, — первым делом. И не забывай выключать автомат перед ремонтом.`,
  recap:'Ты прошёл полную смену электрика! Обрыв, КЗ, перегрузка и плохой контакт — главные неисправности домашней проводки.',
  make:()=>[{room:'Спальня',n:4,loads:[['lamp',2,1],['tv',4,1]],fault:{type:'break',seg:rnd(0,3)}},
            {room:'Кухня',n:5,loads:[['lamp',1,1],['kettle',2,1],['heater',3,0],['micro',4,0],['fridge',5,1]],preheat:15},
@@ -176,15 +199,17 @@ const LEVELS=[
            {room:'Гостиная',n:4,loads:[['lamp',1,1],['tv',2,1],['heater',4,1]],fault:{type:'loose',seg:rnd(0,3)}}]},
 ];
 
-const G={state:'menu',br:[],tool:'volt',thermal:false,score:0,marks:[],logs:[],done:loadDone()};
+const G={state:'menu',br:[],tool:'volt',score:0,marks:[],logs:[],done:loadDone(),busy:null,sel:null};
 function loadDone(){try{return JSON.parse(localStorage.getItem('elec_done')||'[]')}catch(e){return []}}
 function saveDone(){try{localStorage.setItem('elec_done',JSON.stringify(G.done))}catch(e){}}
 
 const segR=s=>s.loose?RLOOSE:RSEG;
+const isOpen=s=>s.open||s.disc;
 
 function buildBranch(d){
-  const b={room:d.room,n:d.n,breaker:!d.tripped,segs:[],loads:[],V:[],Iseg:[],path:[],I:0,Rin:Infinity,tripFlash:0,noff:0};
-  for(let k=0;k<d.n;k++) b.segs.push({open:false,short:false,loose:false,heat:d.preheat||0,repair:0,off:0});
+  const b={room:d.room,n:d.n,breaker:!d.tripped,segs:[],box:[null],loads:[],V:[],Iseg:[],path:[],gsh:[],I:0,Rin:Infinity,tripFlash:0,noff:0};
+  for(let k=0;k<d.n;k++) b.segs.push({open:false,short:false,loose:false,disc:false,heat:d.preheat||0,off:0});
+  for(let k=1;k<=d.n;k++) b.box.push({open:false,proc:null});
   d.loads.forEach(([t,node,req,on])=>b.loads.push({t,node,req:!!req,on:on===undefined?true:!!on,R:E*E/LT[t].P,V:0,I:0}));
   if(d.fault){
     const s=b.segs[d.fault.seg];
@@ -193,17 +218,21 @@ function buildBranch(d){
   }
   return b;
 }
+// неисправность коробки k хранится в кабеле перед ней (segs[k-1])
+function boxFault(b,k){const s=b.segs[k-1];return s.open?'break':s.short?'short':s.loose?'loose':null;}
+const boxLive=(b,k)=>Math.max(b.V[k-1]||0,b.V[k]||0)>50;
 
 function solve(){
   for(const b of G.br){
     const n=b.n, gsh=new Array(n+1).fill(0);
     for(const L of b.loads) if(L.on) gsh[L.node]+=1/L.R;
     for(let k=0;k<n;k++) if(b.segs[k].short) gsh[k+1]+=1/RSHORT;
+    b.gsh=gsh;
     const Rd=new Array(n+1);
     Rd[n]=gsh[n]>0?1/gsh[n]:Infinity;
     for(let k=n-1;k>=0;k--){
       const s=b.segs[k];
-      const p=s.open?Infinity:segR(s)+Rd[k+1];
+      const p=isOpen(s)?Infinity:segR(s)+Rd[k+1];
       b.path[k]=p;
       const g=(p===Infinity?0:1/p)+gsh[k];
       Rd[k]=g>0?1/g:Infinity;
@@ -218,11 +247,20 @@ function solve(){
       const s=b.segs[k], p=b.path[k];
       const I=p===Infinity?0:b.V[k]/p;
       b.Iseg[k]=I;
-      b.V[k+1]=s.open?0:b.V[k]-I*segR(s);
+      b.V[k+1]=isOpen(s)?0:b.V[k]-I*segR(s);
     }
     for(const L of b.loads){L.V=L.on?b.V[L.node]:0; L.I=L.on?L.V/L.R:0;}
     b.I=b.Iseg[0]||0;
   }
+}
+// сопротивление между фазой и нулём в точке k при выключенном автомате
+function ohm(b,k){
+  const g=b.gsh; let Rl=Infinity;
+  const par=(R,gg)=>{const t=(R===Infinity?0:1/R)+gg;return t>0?1/t:Infinity;};
+  for(let j=1;j<=k;j++){const s=b.segs[j-1]; Rl=isOpen(s)?Infinity:segR(s)+par(Rl,g[j-1]);}
+  const Rr=k<b.n?b.path[k]:Infinity;
+  const t=(Rl===Infinity?0:1/Rl)+g[k]+(Rr===Infinity?0:1/Rr);
+  return t>0?1/t:Infinity;
 }
 
 // ===== Игровой цикл =====
@@ -244,19 +282,21 @@ function tick(dt){
       const target=60*(I/IMAX)**2*(segR(s)/RSEG);
       const rate=target>s.heat?0.03:0.012;
       s.heat+=(target-s.heat)*Math.min(1,rate*dt);
-      if(s.heat>65 && !G.warned[b.room+k]){G.warned[b.room+k]=1; log(`🌡️ Провод на линии «${b.room}» сильно нагрелся!`,'bad');}
+      if(s.heat>65 && !G.warned[b.room+k]){G.warned[b.room+k]=1; log(`👃 Пахнет горячей изоляцией: кабель на линии «${b.room}» перегревается!`,'bad');}
       if(s.heat>=100 && G.state==='play') lose('fire',b,k);
-      if(s.repair>0 && G.state==='play'){
-        if(b.V[k]>50){ s.repair=0; shock(b); }
-        else { s.repair+=dt; if(s.repair>=REPAIR_T) finishRepair(b,s); }
-      }
     });
+  }
+  if(G.state!=='play') return;
+  if(G.busy){
+    const a=G.busy, b=G.br[a.bi];
+    if(a.tool!=='drill' && boxLive(b,a.k)){ G.busy=null; shock(b); }
+    else { a.t+=dt; if(a.t>=a.dur){ G.busy=null; a.fn(); } }
   }
   if(G.state!=='play') return;
   G.t-=dt;
   if(G.t<=0){G.t=0; lose('time'); return;}
   const g=goals();
-  if(g.every(x=>x.ok)){ G.winT+=dt; if(G.winT>1.2) win(); } else G.winT=0;
+  if(!G.busy && g.every(x=>x.ok)){ G.winT+=dt; if(G.winT>1.2) win(); } else G.winT=0;
 }
 
 function goals(){
@@ -266,20 +306,59 @@ function goals(){
     out.push({t:`${LT[L.t].ic} ${LT[L.t].n} — ${b.room}`,ok:L.on&&L.V>195});
   out.push({t:'Ток в каждой линии ≤ 16 А',ok:G.br.every(b=>b.I<=IMAX+0.3)});
   out.push({t:'Скрытые неисправности устранены',ok:!G.br.some(b=>b.segs.some(s=>s.open||s.short||s.loose))});
+  out.push({t:'Крышки закрыты, скрутки соединены',ok:G.br.every(b=>b.box.every(x=>!x||!x.open)&&b.segs.every(s=>!s.disc))});
   return out;
 }
 
-function finishRepair(b,s){
-  const had=s.open||s.short||s.loose;
-  s.open=s.short=s.loose=false; s.heat=Math.min(s.heat,8); s.repair=0;
-  if(had){log(`✅ Провод на линии «${b.room}» заменён — неисправность устранена!`,'good'); sfx('fix');}
-  else log(`🔧 Провод заменён, но он был исправен. Время потрачено зря.`);
+function act(bi,k,tool,dur,label,fn){G.busy={bi,k,tool,t:0,dur,fn};log(label);sfx('work');}
+
+function boxClick(bi,k){
+  const b=G.br[bi], bx=b.box[k], t=G.tool;
+  G.sel={bi,k}; hudT=0;
+  if(t==='volt'){measureNode(bi,k);return;}
+  if(t==='amp'){setMeter('—','','Клещи надевают на кабель — щёлкни по проводу между коробками.');return;}
+  if(G.busy){log('Руки заняты — дождись конца текущей операции.');return;}
+  if(t==='drill'){
+    if(!bx.open) act(bi,k,t,1.5,`🔩 Откручиваю крышку коробки ${k} («${b.room}»)…`,()=>{bx.open=true;reveal(b,k);});
+    else act(bi,k,t,1.2,`🔩 Прикручиваю крышку коробки ${k} на место…`,()=>{bx.open=false;log(`Коробка ${k} («${b.room}») закрыта.`);});
+    return;
+  }
+  if(!bx.open){log('Сначала открути крышку коробки шуруповёртом 🔩.');return;}
+  if(boxLive(b,k)){shock(b);return;}
+  const p=bx.proc;
+  if(p && p.i<PROCS[p.type].steps.length){
+    const st=PROCS[p.type].steps;
+    const [need,text,dur]=st[p.i];
+    if(t===need) act(bi,k,t,dur,`${TI[t].ic} ${TI[t].n}: ${text}…`,()=>{p.i++; sfx('fix'); if(p.i>=st.length) fixFault(b,k);});
+    else log(`Не тот инструмент. Сейчас нужно: ${TI[need].ic} ${TI[need].n} — ${text}.`,'bad');
+    return;
+  }
+  if(t==='pliers'){
+    if(k>=b.n){log('Это последняя коробка на линии — дальше разъединять нечего.');return;}
+    const s=b.segs[k];
+    act(bi,k,t,1.2,s.disc?`🗜️ Соединяю скрутку в коробке ${k}…`:`🗜️ Разъединяю скрутку в коробке ${k}…`,()=>{
+      s.disc=!s.disc; clearMarks();
+      log(s.disc?`Скрутка в коробке ${k} разъединена: дальняя часть линии отрезана.`:`Скрутка в коробке ${k} снова соединена.`);
+    });
+    return;
+  }
+  log('Здесь всё исправно — этот инструмент сейчас не нужен.');
+}
+function reveal(b,k){
+  const bx=b.box[k], f=boxFault(b,k);
+  if(bx.proc && bx.proc.i>=PROCS[bx.proc.type].steps.length){log(`Коробка ${k}: ремонт уже сделан.`);return;}
+  if(f){ if(!bx.proc) bx.proc={type:f,i:0}; log(`⚠️ Коробка ${k} («${b.room}»): ${PROCS[f].desc}`,'bad'); sfx('found'); }
+  else log(`Коробка ${k} («${b.room}»): внутри всё в порядке, скрутки целые.`);
+}
+function fixFault(b,k){
+  const s=b.segs[k-1];
+  s.open=s.short=s.loose=false; s.heat=Math.min(s.heat,8);
+  log(`✅ Коробка ${k} («${b.room}») отремонтирована! Не забудь закрыть крышку.`,'good');
   clearMarks();
 }
-
 function shock(b){
   G.lives--; flash('rgba(190,225,255,.75)'); sfx('zap');
-  log(`⚡ Удар током! Провод на линии «${b.room}» под напряжением. Сначала выключи автомат!`,'bad');
+  log(`⚡ Удар током! Провода на линии «${b.room}» под напряжением. Сначала выключи автомат!`,'bad');
   if(G.lives<=0) lose('shock');
 }
 
@@ -309,58 +388,63 @@ function buildSVG(){
   R.rows=[];
   const main=el('g',{},svg);
   G.br.forEach((b,i)=>{
-    const y=yFirst+i*rowH, yN=y+78, r={segs:[],loads:[],y};
+    const y=yFirst+i*rowH, yN=y+78, r={segs:[],loads:[],boxes:[null],y};
     R.rows.push(r);
     const g=el('g',{},main);
-    txt(b.room,{x:XS,y:y-30,fill:'#e6edf3','font-size':15,'font-weight':700},g);
+    txt(b.room,{x:XS+28,y:y-30,fill:'#e6edf3','font-size':15,'font-weight':700},g);
     txt('фаза',{x:XE+66,y:y+4,fill:'#6b7889','font-size':10},g);
     txt('ноль',{x:XE+66,y:yN+4,fill:'#4d7bb3','font-size':10},g);
     el('line',{x1:118,y1:y,x2:138,y2:y,stroke:'#c8794a','stroke-width':5},g);
     el('line',{x1:186,y1:y,x2:XS,y2:y,stroke:'#c8794a','stroke-width':5},g);
-    // ноль
     el('line',{x1:126,y1:yN,x2:XE+60,y2:yN,stroke:'#2f5f9c','stroke-width':3},g);
     r.nflow=el('line',{x1:126,y1:yN,x2:XE+60,y2:yN,stroke:'#9cc8ff','stroke-width':2,'stroke-dasharray':'4 14',opacity:0},g);
-    // автомат
     const bg=el('g',{class:'clk','data-kind':'brk','data-b':i},g);
     r.brk=el('rect',{x:138,y:y-22,width:48,height:44,rx:7,fill:'#1f3b2a',stroke:'#3ddc84','stroke-width':2},bg);
     el('rect',{x:156,y:y-16,width:12,height:32,rx:3,fill:'#0b0f14'},bg);
     r.lever=el('rect',{x:153,y:y-16,width:18,height:14,rx:3,fill:'#3ddc84'},bg);
     txt('А'+(i+1),{x:162,y:y+36,'text-anchor':'middle',fill:'#8b98a8','font-size':10},g);
-    // приборы (под проводами)
     b.loads.forEach((L,li)=>{
-      const x=xNode(b,L.node), cy=y+39, lt=LT[L.t];
-      const lg=el('g',{class:'loadg'},g);
-      el('line',{x1:x,y1:y,x2:x,y2:yN,stroke:'#56667a','stroke-width':2.5},lg);
+      const x=xNode(b,L.node), cy=y+41, lt=LT[L.t];
+      const lg=el('g',{},g);
+      el('line',{x1:x,y1:y+12,x2:x,y2:yN,stroke:'#56667a','stroke-width':2.5},lg);
       const glow=el('circle',{cx:x,cy,r:26,fill:L.t==='lamp'?'#ffd84a':'#7fe0ff',filter:'url(#glow)',opacity:0},lg);
       const hb=el('g',{class:'clk','data-kind':'load','data-b':i,'data-l':li},lg);
-      const body=el('circle',{cx:x,cy,r:20,fill:'#222c38',stroke:'#56667a','stroke-width':2},hb);
-      txt(lt.ic,{x,y:cy+7,'text-anchor':'middle','font-size':20},hb);
-      if(L.req) txt('★',{x:x-21,y:cy-12,fill:'#ffcc33','font-size':14},lg);
+      const body=el('circle',{cx:x,cy,r:19,fill:'#222c38',stroke:'#56667a','stroke-width':2},hb);
+      txt(lt.ic,{x,y:cy+7,'text-anchor':'middle','font-size':19},hb);
+      if(L.req) txt('★',{x:x-21,y:cy-11,fill:'#ffcc33','font-size':14},lg);
       txt(lt.n,{x,y:yN+17,'text-anchor':'middle',fill:'#aab6c4','font-size':11},lg);
       txt(lt.P+' Вт',{x,y:yN+30,'text-anchor':'middle',fill:'#6b7889','font-size':10,'font-family':'JetBrains Mono'},lg);
       const sw=el('g',{class:'clk','data-kind':'sw','data-b':i,'data-l':li},g);
-      const swr=el('rect',{x:x+25,y:cy-9,width:30,height:18,rx:9,fill:'#2a3442',stroke:'#3a4656'},sw);
-      const swk=el('circle',{cx:x+34,cy,r:6,fill:'#8b98a8'},sw);
+      const swr=el('rect',{x:x+24,y:cy-9,width:30,height:18,rx:9,fill:'#2a3442',stroke:'#3a4656'},sw);
+      const swk=el('circle',{cx:x+33,cy,r:6,fill:'#8b98a8'},sw);
       r.loads.push({glow,body,swr,swk,x,cy});
     });
-    // провода
     b.segs.forEach((s,k)=>{
       const x1=xNode(b,k), x2=xNode(b,k+1), mx=(x1+x2)/2;
       const sg=el('g',{},g);
       const base=el('line',{x1,y1:y,x2,y2:y,stroke:'#c8794a','stroke-width':6,'stroke-linecap':'round'},sg);
-      const flow=el('line',{x1:x1+8,y1:y,x2:x2-8,y2:y,stroke:'#fff1a8','stroke-width':2.4,'stroke-dasharray':'5 13',opacity:0},sg);
-      el('line',{x1:x1+8,y1:y,x2:x2-8,y2:y,stroke:'transparent','stroke-width':24,class:'hit','data-kind':'seg','data-b':i,'data-k':k},sg);
+      const flow=el('line',{x1:x1+14,y1:y,x2:x2-14,y2:y,stroke:'#fff1a8','stroke-width':2.4,'stroke-dasharray':'5 13',opacity:0},sg);
+      el('line',{x1:x1+14,y1:y,x2:x2-14,y2:y,stroke:'transparent','stroke-width':24,class:'hit','data-kind':'seg','data-b':i,'data-k':k},sg);
       const smoke=el('g',{class:'smoke'},sg);
       for(let j=0;j<3;j++) el('circle',{cx:mx+(j-1)*8,cy:y-8,r:6,fill:'#9aa3ad'},smoke);
-      const temp=txt('',{x:mx,y:y-14,'text-anchor':'middle','font-size':12,'font-family':'JetBrains Mono','font-weight':700},sg);
-      const bar=el('g',{},sg);
-      el('rect',{x:mx-30,y:y+11,width:60,height:6,rx:3,fill:'#2a3442'},bar);
-      const barF=el('rect',{x:mx-30,y:y+11,width:0,height:6,rx:3,fill:'#ffcc33'},bar);
-      r.segs.push({base,flow,smoke,temp,bar,barF});
+      r.segs.push({base,flow,smoke});
     });
-    // точки
-    for(let k=0;k<=b.n;k++){
-      el('circle',{cx:xNode(b,k),cy:y,r:8,fill:'#2b3644',stroke:'#a9b8ca','stroke-width':2,class:'nodec','data-kind':'node','data-b':i,'data-k':k},g);
+    // начало линии — точка для измерений
+    el('circle',{cx:xNode(b,0),cy:y,r:8,fill:'#2b3644',stroke:'#a9b8ca','stroke-width':2,class:'nodec','data-kind':'node','data-b':i,'data-k':0},g);
+    // распаечные коробки
+    for(let k=1;k<=b.n;k++){
+      const x=xNode(b,k);
+      const bxg=el('g',{class:'clk','data-kind':'box','data-b':i,'data-k':k},g);
+      const sel=el('rect',{x:x-19,y:y-19,width:38,height:38,rx:7,fill:'none',stroke:'#ffcc33','stroke-width':2,opacity:0},bxg);
+      const rect=el('rect',{x:x-14,y:y-14,width:28,height:28,rx:4,fill:'#4a5566',stroke:'#9fb0c4','stroke-width':2},bxg);
+      const sc=el('g',{},bxg);
+      [[-8,-8],[8,-8],[-8,8],[8,8]].forEach(([dx,dy])=>el('circle',{cx:x+dx,cy:y+dy,r:1.8,fill:'#1a212b'},sc));
+      const ic=txt('',{x,y:y+5,'text-anchor':'middle','font-size':14},bxg);
+      txt(String(k),{x:x+17,y:y-15,fill:'#6b7889','font-size':10,'font-family':'JetBrains Mono'},g);
+      const bar=el('g',{},g);
+      el('rect',{x:x-24,y:y-34,width:48,height:6,rx:3,fill:'#2a3442'},bar);
+      const barF=el('rect',{x:x-24,y:y-34,width:0,height:6,rx:3,fill:'#ffcc33'},bar);
+      r.boxes.push({sel,rect,sc,ic,bar,barF});
     }
   });
   R.marks=el('g',{'pointer-events':'none'},svg);
@@ -368,9 +452,7 @@ function buildSVG(){
   renderMarks();
 }
 
-const HS=[[0,[29,59,138]],[.35,[47,182,201]],[.6,[242,212,60]],[.8,[255,138,31]],[1,[255,42,42]]];
 const rgb=c=>`rgb(${c.map(Math.round).join(',')})`;
-function heatColor(h){const t=Math.max(0,Math.min(1,h/100));for(let i=1;i<HS.length;i++){if(t<=HS[i][0]){const[a,ca]=HS[i-1],[bb,cb]=HS[i];const u=(t-a)/(bb-a);return rgb(ca.map((c,j)=>c+(cb[j]-c)*u));}}return rgb(HS[4][1]);}
 function copperColor(h){const u=Math.max(0,Math.min(1,(h-55)/45));const a=[200,121,74],b=[255,59,42];return rgb(a.map((c,j)=>c+(b[j]-c)*u));}
 
 function render(dt){
@@ -386,29 +468,38 @@ function render(dt){
     const flicker=b.segs.some((s,k)=>s.loose&&b.Iseg[k]>1);
     b.segs.forEach((s,k)=>{
       const sr=r.segs[k], I=b.Iseg[k]||0;
-      sr.base.setAttribute('stroke',G.thermal?heatColor(s.heat):copperColor(s.heat));
-      sr.base.setAttribute('stroke-width',G.thermal?10:6);
+      sr.base.setAttribute('stroke',copperColor(s.heat));
+      if(s.disc){sr.base.setAttribute('stroke-dasharray','3 9');sr.base.setAttribute('opacity','.6');}
+      else {sr.base.removeAttribute('stroke-dasharray');sr.base.setAttribute('opacity','1');}
       s.off+=Math.min(I,60)*dt*8;
       sr.flow.setAttribute('stroke-dashoffset',(-s.off).toFixed(1));
       sr.flow.setAttribute('opacity',I>0.02?Math.min(1,.3+I/14).toFixed(2):0);
       sr.smoke.style.display=s.heat>70?'':'none';
-      sr.temp.style.display=G.thermal?'':'none';
-      sr.temp.textContent=Math.round(22+s.heat)+'°';
-      sr.temp.setAttribute('fill',heatColor(s.heat));
-      sr.bar.style.display=s.repair>0?'':'none';
-      sr.barF.setAttribute('width',(60*Math.min(1,s.repair/REPAIR_T)).toFixed(1));
     });
+    for(let k=1;k<=b.n;k++){
+      const bx=b.box[k], br=r.boxes[k];
+      const busy=G.busy&&G.busy.bi===i&&G.busy.k===k;
+      const p=bx.proc, pend=p&&p.i<PROCS[p.type].steps.length;
+      br.rect.setAttribute('fill',bx.open?'#141a22':'#4a5566');
+      br.rect.setAttribute('stroke',bx.open?(pend?'#ff6b6b':'#ffcc33'):'#9fb0c4');
+      br.rect.setAttribute('stroke-dasharray',bx.open?'4 3':'');
+      br.sc.style.display=bx.open?'none':'';
+      br.ic.textContent=busy?TI[G.busy.tool].ic:!bx.open?'':pend?'⚠️':p?'✅':'👌';
+      br.sel.setAttribute('opacity',G.sel&&G.sel.bi===i&&G.sel.k===k?1:0);
+      br.bar.style.display=busy?'':'none';
+      if(busy) br.barF.setAttribute('width',(48*Math.min(1,G.busy.t/G.busy.dur)).toFixed(1));
+    }
     b.noff+=Math.min(b.I,60)*dt*8;
     r.nflow.setAttribute('stroke-dashoffset',b.noff.toFixed(1));
     r.nflow.setAttribute('opacity',b.I>0.02?Math.min(1,.25+b.I/14).toFixed(2):0);
     b.loads.forEach((L,li)=>{
       const lr=r.loads[li];
       let br=L.on?(L.V/E)**2:0;
-      if(flicker&&L.on&&L.node>0) br*=0.55+Math.random()*0.45;
+      if(flicker&&L.on) br*=0.55+Math.random()*0.45;
       lr.glow.setAttribute('opacity',(L.t==='lamp'?br:br*0.45).toFixed(2));
       lr.body.setAttribute('stroke',!L.on?'#56667a':L.V>195?'#3ddc84':L.V>60?'#ffcc33':'#ff6b6b');
       lr.swr.setAttribute('fill',L.on?'#1f5a36':'#2a3442');
-      lr.swk.setAttribute('cx',L.on?lr.x+46:lr.x+34);
+      lr.swk.setAttribute('cx',L.on?lr.x+45:lr.x+33);
       lr.swk.setAttribute('fill',L.on?'#3ddc84':'#8b98a8');
     });
   });
@@ -428,33 +519,44 @@ function renderMarks(){
 function addMark(key,x,y,text,bg){G.marks=G.marks.filter(m=>m.key!==key);G.marks.push({key,x,y,text,bg});renderMarks();}
 function clearMarks(){G.marks=[];renderMarks();}
 
-// ===== Измерения и клики =====
+// ===== Измерения =====
 const fV=v=>v.toFixed(1)+' В', fA=a=>a.toFixed(1)+' А';
+const fO=r=>r===Infinity?'OL':r<10?r.toFixed(2)+' Ом':r.toFixed(0)+' Ом';
 function setMeter(v,mode,expl){lcd.textContent=v;lcdMode.textContent=mode||' ';lcdExpl.innerHTML=expl||'';}
 
 function measureNode(bi,k){
-  const b=G.br[bi], V=b.V[k];
+  const b=G.br[bi], where=k===0?'начало линии':'коробка '+k;
+  if(!b.breaker){
+    const r=ohm(b,k);
+    let ex;
+    if(r<2) ex='Почти <b>0 Ом</b> — фаза замкнута на ноль: <b>короткое замыкание</b> в подключённой части линии! Разъедини скрутку в коробке 🗜️ и измерь снова, чтобы сузить поиск.';
+    else if(r===Infinity) ex='OL — цепь разомкнута: приборы выключены, провод оборван или скрутка разъединена. Замыкания нет.';
+    else ex='Нормальное сопротивление — так «звонятся» включённые приборы. Замыкания в этой части линии нет.';
+    setMeter(fO(r),'СОПРОТИВЛЕНИЕ (прозвонка) · '+where+' · '+b.room,ex);
+    addMark(`n${bi}-${k}`,xNode(b,k),R.rows[bi].y-26,r===Infinity?'OL':r<10?r.toFixed(1)+'Ω':r.toFixed(0)+'Ω',r<2?'#ffb08a':'#c6d7f0');
+    sfx('beep'); return;
+  }
+  const V=b.V[k];
   let ex;
-  if(!b.breaker) ex='0 В: автомат этой линии выключен, напряжения нет нигде.';
-  else if(V>200) ex='Напряжение есть: сюда электричество доходит нормально.';
+  if(V>200) ex='Напряжение есть: сюда электричество доходит нормально.';
   else if(V>120) ex='Напряжение просело! Где-то очень большая нагрузка.';
   else if(V>5) ex='Очень низкое напряжение — что-то серьёзно не так.';
-  else ex='0 В: сюда напряжение не доходит. Обрыв где-то левее!';
+  else ex='0 В: сюда напряжение не доходит. Неисправна первая коробка, где оно пропало.';
   for(const nb of [k-1,k+1]){
     if(nb<0||nb>b.n||!G.marks.find(m=>m.key===`n${bi}-${nb}`)) continue;
-    const d=Math.abs(b.V[Math.min(k,nb)]-b.V[Math.max(k,nb)]);
-    if(b.V[Math.max(k,nb)]<1 && b.V[Math.min(k,nb)]>100) ex+=`<br>📍 Между этой и соседней точкой напряжение пропадает — <b>здесь обрыв!</b>`;
-    else if(b.breaker) ex+=`<br>Падение на участке: <b>${d.toFixed(1)} В</b> ${d>4?'— подозрительно много! Плохой контакт?':'(норма — около 1–3 В)'}`;
+    const a=Math.min(k,nb), c=Math.max(k,nb), d=Math.abs(b.V[a]-b.V[c]);
+    if(b.V[c]<1 && b.V[a]>100) ex+=`<br>📍 Между точками ${a} и ${c} напряжение пропадает — <b>проверь коробку ${c}!</b>`;
+    else ex+=`<br>Падение на участке ${a}–${c}: <b>${d.toFixed(1)} В</b> ${d>4?`— подозрительно много! Плохой контакт в коробке ${c}?`:'(норма — около 1–3 В)'}`;
   }
-  setMeter(fV(V),'НАПРЯЖЕНИЕ · точка '+k+' · '+b.room,ex);
-  addMark(`n${bi}-${k}`,xNode(b,k),R.rows[bi].y-22,V.toFixed(V<10?1:0)+'В');
+  setMeter(fV(V),'НАПРЯЖЕНИЕ · '+where+' · '+b.room,ex);
+  addMark(`n${bi}-${k}`,xNode(b,k),R.rows[bi].y-26,V.toFixed(V<10?1:0)+'В');
   sfx('beep');
 }
 function measureSeg(bi,k){
   const b=G.br[bi], I=b.Iseg[k]||0, x=(xNode(b,k)+xNode(b,k+1))/2;
   let ex=I<0.05?'Ток не течёт: цепь разорвана или выключена.':I<=IMAX?'Ток в норме (провод рассчитан на 16 А).':`Больше нормы в 16 А! Провод будет <b>нагреваться</b>.`;
-  setMeter(fA(I),'ТОК · провод '+k+'–'+(k+1)+' · '+b.room,ex);
-  addMark(`s${bi}-${k}`,x,R.rows[bi].y+24,I.toFixed(1)+'А',I>IMAX?'#ffb08a':'#a9d3e8');
+  setMeter(fA(I),'ТОК · кабель '+k+'–'+(k+1)+' · '+b.room,ex);
+  addMark(`s${bi}-${k}`,x,R.rows[bi].y+22,I.toFixed(1)+'А',I>IMAX?'#ffb08a':'#a9d3e8');
   sfx('beep');
 }
 function measureLoad(bi,li,mode){
@@ -481,19 +583,16 @@ svg.addEventListener('click',e=>{
     const L=b.loads[+t.dataset.l]; L.on=!L.on; sfx('click'); clearMarks();
     log(`${LT[L.t].ic} ${LT[L.t].n} (${b.room}) — ${L.on?'включён':'выключен'}.`); solve(); return;
   }
+  if(kind==='box'){boxClick(bi,+t.dataset.k);return;}
   const tool=G.tool;
   if(kind==='node'){
-    const k=+t.dataset.k;
-    if(tool==='volt') measureNode(bi,k);
-    else setMeter('—','',tool==='amp'?'Клещами меряют ток в проводе — щёлкни по линии между точками.':'Ремонт делают на проводе — щёлкни по линии между точками.');
+    if(tool==='volt') measureNode(bi,0);
+    else log('Это начало линии. Работы ведутся в распаечных коробках — квадратиках на линии.');
   } else if(kind==='seg'){
-    const k=+t.dataset.k, s=b.segs[k];
+    const k=+t.dataset.k;
     if(tool==='amp') measureSeg(bi,k);
-    else if(tool==='repair'){
-      if(s.repair>0) return;
-      if(b.V[k]>50){shock(b);return;}
-      s.repair=0.001; sfx('click'); log(`🔧 Меняю провод на линии «${b.room}»…`);
-    } else setMeter('—','','Мультиметр меряет напряжение в точках — щёлкни по кружочку на проводе.');
+    else if(tool==='volt') setMeter('—','','Мультиметром меряют в точках — щёлкни по коробке (квадратику) или началу линии.');
+    else log('Кабель замурован в стене. Работы ведутся в распаечных коробках — щёлкни по квадратику.');
   } else if(kind==='load'){
     const li=+t.dataset.l;
     if(tool==='volt'||tool==='amp') measureLoad(bi,li,tool);
@@ -504,42 +603,26 @@ svg.addEventListener('click',e=>{
 // ===== Интерфейс =====
 const $=id=>document.getElementById(id);
 const lcd=$('lcd'), lcdMode=$('lcdMode'), lcdExpl=$('lcdExpl');
-const TOOLS=[
- {id:'volt',ic:'🔍',n:'Мультиметр',d:'напряжение в точке',k:'1'},
- {id:'amp',ic:'🧲',n:'Токовые клещи',d:'ток в проводе',k:'2'},
- {id:'repair',ic:'🔧',n:'Замена провода',d:'только без напряжения!',k:'3'},
- {id:'thermal',ic:'🌡️',n:'Тепловизор',d:'показывает нагрев',k:'T'},
-];
 function buildTools(){
-  const L=LEVELS[G.li]; const box=$('tools'); box.innerHTML='';
-  for(const t of TOOLS){
+  const box=$('tools'); box.innerHTML='';
+  TOOLS.forEach((t,i)=>{
     const b=document.createElement('button');
-    b.className='tool'+(L.tools.includes(t.id)?'':' disabled');
-    b.dataset.id=t.id;
-    b.innerHTML=`<span class="ic">${t.ic}</span><span>${t.n}<small>${t.d}</small></span><span class="k">${t.k}</span>`;
+    b.className='tool'; b.dataset.id=t.id; b.title=t.d;
+    b.innerHTML=`<span class="ic">${t.ic}</span><span>${t.n}</span><span class="k">${i+1}</span>`;
     b.onclick=()=>pickTool(t.id);
     box.appendChild(b);
-  }
+  });
   updateTools();
 }
-function pickTool(id){
-  if(!LEVELS[G.li].tools.includes(id)) return;
-  if(id==='thermal'){G.thermal=!G.thermal;$('board').classList.toggle('thermal',G.thermal);}
-  else G.tool=id;
-  sfx('click'); updateTools();
-}
+function pickTool(id){G.tool=id;sfx('click');updateTools();}
 function updateTools(){
-  document.querySelectorAll('.tool').forEach(b=>{
-    const id=b.dataset.id;
-    b.classList.toggle('active',id===G.tool);
-    b.classList.toggle('on',id==='thermal'&&G.thermal);
-  });
-  svg.style.cursor=G.tool==='repair'?'crosshair':'default';
+  document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active',b.dataset.id===G.tool));
+  $('tdesc').innerHTML=`<b style="color:var(--text)">${TI[G.tool].ic} ${TI[G.tool].n}.</b> ${TI[G.tool].d}`;
 }
 document.addEventListener('keydown',e=>{
   if(G.state!=='play') return;
-  const m={'1':'volt','2':'amp','3':'repair','t':'thermal','T':'thermal','е':'thermal','Е':'thermal','4':'thermal'}[e.key];
-  if(m) pickTool(m);
+  const i=parseInt(e.key,10);
+  if(i>=1&&i<=TOOLS.length) pickTool(TOOLS[i-1].id);
 });
 
 function log(msg,cls){
@@ -547,6 +630,21 @@ function log(msg,cls){
   $('log').innerHTML=G.logs.map((l,i)=>`<div class="${i===0?'new ':''}${l.cls||''}">${l.msg}</div>`).join('');
 }
 function flash(c){const f=$('flash');f.style.background=c;f.style.transition='none';f.style.opacity=1;requestAnimationFrame(()=>{f.style.transition='opacity .5s';f.style.opacity=0;});}
+
+function boxPanel(){
+  if(!G.sel||!G.br[G.sel.bi]) return '<span style="color:var(--muted)">Щёлкни по распаечной коробке (квадратик на линии), чтобы поработать с ней.</span>';
+  const b=G.br[G.sel.bi], k=G.sel.k, bx=b.box[k], s=b.segs[k];
+  let h=`<b>Коробка ${k} · ${b.room}</b> ${boxLive(b,k)?'<span class="bad">· ⚡ под напряжением</span>':'<span style="color:var(--ok)">· обесточена</span>'}<br>`;
+  if(!bx.open) h+='🔒 Крышка закрыта. Открути её шуруповёртом 🔩, чтобы заглянуть внутрь.';
+  else if(bx.proc){
+    const P=PROCS[bx.proc.type], i0=bx.proc.i;
+    if(i0<P.steps.length){
+      h+=`<span class="bad">⚠️ ${P.desc}</span><ol class="steps">${P.steps.map((st,i)=>`<li class="${i<i0?'ok':i===i0?'cur':''}">${i<i0?'✅':i===i0?'➡️':'⬜'} ${TI[st[0]].ic} ${TI[st[0]].n} — ${st[1]}</li>`).join('')}</ol>`;
+    } else h+='✅ Отремонтировано. Закрой крышку шуруповёртом 🔩.';
+  } else h+='👌 Внутри всё в порядке: скрутки целые, изоляция чистая.';
+  if(k<b.n && s.disc) h+='<br><span class="bad">✂ Скрутка разъединена — соедини плоскогубцами 🗜️.</span>';
+  return h;
+}
 
 let hudT=0;
 function hud(dt){
@@ -556,7 +654,10 @@ function hud(dt){
   $('timer').classList.toggle('warn',t<20);
   $('lives').textContent='❤️'.repeat(Math.max(0,G.lives))+'🖤'.repeat(Math.max(0,3-G.lives));
   $('score').textContent='★ '+G.score;
-  if(G.br.length) $('goals').innerHTML=goals().map(g=>`<li class="${g.ok?'ok':''}"><span class="m">${g.ok?'✅':'⬜'}</span><span>${g.t}</span></li>`).join('');
+  if(G.br.length){
+    $('goals').innerHTML=goals().map(g=>`<li class="${g.ok?'ok':''}"><span class="m">${g.ok?'✅':'⬜'}</span><span>${g.t}</span></li>`).join('');
+    $('boxp').innerHTML=boxPanel();
+  }
 }
 
 $('hintBtn').onclick=()=>{
@@ -568,10 +669,11 @@ $('hintBtn').onclick=()=>{
     else if(b.segs.some(s=>s.loose)) h=`🔥 На линии «${b.room}» греется плохой контакт. Можно выключить мощный прибор, чтобы выиграть время.`;
   }
   if(!h) for(const b of G.br) if(b.I>IMAX+0.3){h=`Линия «${b.room}» перегружена (${b.I.toFixed(1)} А). Выключи необязательные приборы (без ★).`;break;}
-  if(!h) for(const b of G.br) if(b.segs.some(s=>s.short)){h=`На линии «${b.room}» короткое замыкание. Не включай автомат! Включи тепловизор 🌡️ и найди последний горячий участок.`;break;}
-  if(!h) for(const b of G.br) if(b.segs.some(s=>s.open)){h=`На линии «${b.room}» обрыв. Включи автомат и измерь мультиметром точки слева направо: где 230 В сменится на 0, там и обрыв.`;break;}
-  if(!h) for(const b of G.br) if(b.segs.some(s=>s.loose)){h=`На линии «${b.room}» плохой контакт. Измерь две соседние точки: на плохом участке большое падение напряжения. Или посмотри тепловизором.`;break;}
-  if(!h) h='Неисправностей больше нет! Включи все автоматы и обязательные приборы (★).';
+  if(!h) for(const b of G.br) for(let k=1;k<=b.n&&!h;k++){const p=b.box[k].proc;if(b.box[k].open&&p&&p.i<PROCS[p.type].steps.length){const st=PROCS[p.type].steps[p.i];h=`В коробке ${k} («${b.room}») ремонт не закончен. Следующий шаг: ${TI[st[0]].ic} ${TI[st[0]].n} — ${st[1]}.${boxLive(b,k)?' Но сначала выключи автомат!':''}`;}}
+  if(!h) for(const b of G.br) if(b.segs.some(s=>s.short)){h=`На линии «${b.room}» короткое замыкание. Не включай автомат! Прозвони линию мультиметром в начале, затем открой среднюю коробку и разъедини скрутку плоскогубцами — так поймёшь, в какой половине КЗ.`;break;}
+  if(!h) for(const b of G.br) if(b.segs.some(s=>s.open)){h=`На линии «${b.room}» обрыв. Включи автомат и меряй коробки слева направо: неисправна первая, где 0 В.`;break;}
+  if(!h) for(const b of G.br) if(b.segs.some(s=>s.loose)){h=`На линии «${b.room}» плохой контакт. Измерь напряжение в соседних коробках: перед плохой падение больше нескольких вольт.`;break;}
+  if(!h) h='Неисправностей больше нет! Соедини скрутки, закрой крышки, включи автоматы и обязательные приборы (★).';
   log('💡 '+h);
   setMeter(lcd.textContent,lcdMode.textContent,'💡 '+h);
 };
@@ -585,10 +687,10 @@ function menu(){
   G.state='menu';
   show(`<h1>⚡ Электрик-спасатель</h1>
   <div class="sub">Игра про домашнюю проводку</div>
-  <p>Ты — дежурный электрик в старом доме. По ночам здесь то и дело что-то ломается: обрываются провода, случаются замыкания, кто-то включает всё сразу. Найди неисправность приборами, почини её и не дай дому загореться.</p>
+  <p>Ты — дежурный электрик в старом доме. По ночам здесь то и дело что-то ломается: перегорают скрутки, случаются замыкания, кто-то включает всё сразу. Найди неисправность мультиметром, вскрой распаечную коробку и почини её настоящими инструментами: кусачками, плоскогубцами, отвёрткой, щёткой и изолентой.</p>
   <p style="color:var(--muted);font-size:14px">Знать физику заранее не нужно: каждый уровень коротко объясняет новое явление.</p>
   <div class="levels">${LEVELS.map((L,i)=>`<button class="lvbtn ${G.done.includes(i)?'done':''}" data-i="${i}"><b>${i+1}. ${L.title}</b><span>${L.tag}</span></button>`).join('')}</div>
-  <div class="row"><button class="big" id="mDemo">▶ Как играть (видео)</button><button class="big ghost" id="mHelp">📘 Шпаргалка по физике</button></div>`);
+  <div class="row"><button class="big" id="mDemo">▶ Как играть (видео)</button><button class="big ghost" id="mHelp">📘 Шпаргалка</button></div>`);
   card.querySelectorAll('.lvbtn').forEach(b=>b.onclick=()=>startLevel(+b.dataset.i));
   $('mHelp').onclick=()=>help(menu);
   $('mDemo').onclick=demo;
@@ -596,7 +698,7 @@ function menu(){
 function demo(){
   G.state='help';
   show(`<h2>▶ Как пройти уровень 2 «Искры на кухне»</h2>
-  <p style="color:var(--muted);margin-top:0">Короткое замыкание: ищем место тепловизором, чиним при выключенном автомате, включаем свет.</p>
+  <p style="color:var(--muted);margin-top:0">Короткое замыкание: ищем место прозвонкой, чиним скрутку в коробке при выключенном автомате и включаем свет.</p>
   <video src="demo_level2.mp4" controls autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--line);background:#000"></video>
   <div class="row"><button class="big" id="dPlay">Играть уровень 2</button><button class="big ghost" id="dBack">Назад</button></div>`);
   $('dPlay').onclick=()=>startLevel(1);
@@ -606,19 +708,18 @@ function demo(){
 function startLevel(i){
   G.li=i; const L=LEVELS[i];
   G.br=L.make().map(buildBranch);
-  G.t=L.time; G.lives=3; G.marks=[]; G.fire=null; G.thermal=false; G.tool=L.tools[0]; G.winT=0; G.warned={}; G.logs=[];
-  $('board').classList.remove('thermal');
+  G.t=L.time; G.lives=3; G.marks=[]; G.fire=null; G.tool='volt'; G.winT=0; G.warned={}; G.logs=[]; G.busy=null; G.sel=null;
   $('lvlName').textContent=`Уровень ${i+1}: ${L.title}`;
   $('log').innerHTML='';
   buildSVG(); buildTools(); solve();
-  setMeter('—','','Выбери прибор и щёлкни по схеме.');
+  setMeter('—','','Выбери инструмент и щёлкни по схеме.');
   hudT=0; hud(0);
   G.state='card';
   show(`<div class="sub">Уровень ${i+1} из ${LEVELS.length} · ${L.tag}</div>
     <h2>${L.title}</h2>
     <p>${L.story}</p>
     <div class="lesson">${L.lesson}</div>
-    <p style="color:var(--muted);font-size:14px">⏱ Время: ${Math.floor(L.time/60)}:${String(L.time%60).padStart(2,'0')} · ❤️ 3 жизни · Жёлтые штрихи на проводах — это бегущий ток.</p>
+    <p style="color:var(--muted);font-size:14px">⏱ Время: ${Math.floor(L.time/60)}:${String(L.time%60).padStart(2,'0')} · ❤️ 3 жизни · Жёлтые штрихи на проводах — это бегущий ток. Инструменты — кнопки слева или клавиши 1–8.</p>
     <div class="row"><button class="big" id="go">Начать смену</button><button class="big ghost" id="back">К уровням</button></div>`);
   $('go').onclick=()=>{hide();G.state='play';log('Смена началась. Удачи!');ac();};
   $('back').onclick=menu;
@@ -642,18 +743,18 @@ function win(){
 
 function lose(reason,b,k){
   if(G.state!=='play') return;
-  G.state='lost';
+  G.state='lost'; G.busy=null;
   let title,text;
   if(reason==='fire'){
     sfx('zap'); flash('rgba(255,80,40,.6)');
     G.fire={x:(xNode(b,k)+xNode(b,k+1))/2,y:R.rows[G.br.indexOf(b)].y+12}; renderMarks();
     title='🔥 Пожар!';
     const s=b.segs[k];
-    if(b.segs.some(x=>x.short)) text=`Провод на линии «${b.room}» раскалился от тока короткого замыкания. Каждое включение автомата при КЗ пропускает через провод сотни ампер. Сначала найди и почини повреждение, потом включай.`;
+    if(b.segs.some(x=>x.short)) text=`Кабель на линии «${b.room}» раскалился от тока короткого замыкания. Каждое включение автомата при КЗ пропускает через провод сотни ампер. Сначала найди и почини повреждение, потом включай.`;
     else if(s.loose) text=`Плохой контакт на линии «${b.room}» перегрелся. Чем больше сопротивление и ток, тем сильнее нагрев. Можно было выключить мощный прибор, чтобы выиграть время.`;
     else text=`Линия «${b.room}» была перегружена: ток ${b.I.toFixed(1)} А при норме 16 А. Выключи лишние мощные приборы до того, как провод раскалится.`;
   } else if(reason==='time'){title='⏰ Время вышло';text='Жильцы так и не дождались света. Попробуй ещё раз — неисправность каждый раз в новом месте.';}
-  else {title='⚡ Слишком много ударов током';text='В жизни это было бы смертельно опасно. Главное правило электрика: <b>перед ремонтом выключи автомат</b>.';}
+  else {title='⚡ Слишком много ударов током';text='В жизни это было бы смертельно опасно. Главное правило электрика: <b>перед ремонтом выключи автомат</b> и убедись мультиметром, что напряжения нет.';}
   setTimeout(()=>{
     show(`<h2>${title}</h2><p>${text}</p><div class="row"><button class="big" id="again">Попробовать снова</button><button class="big ghost" id="lv">К уровням</button></div>`);
     $('again').onclick=()=>startLevel(G.li);
@@ -663,18 +764,20 @@ function lose(reason,b,k){
 
 function help(back){
   const prev=G.state; G.state='help';
-  show(`<h2>📘 Шпаргалка по электричеству</h2>
+  show(`<h2>📘 Шпаргалка электрика</h2>
   <dl class="cheat">
-   <dt>Напряжение (вольты, В)</dt><dd>«Давление», которое толкает электричество по проводам. В розетке — около 230 В. Мультиметр показывает его в любой точке.</dd>
-   <dt>Ток (амперы, А)</dt><dd>Сколько электричества течёт по проводу — как количество воды в трубе. На схеме ток показан бегущими жёлтыми штрихами: чем быстрее бегут, тем ток больше.</dd>
+   <dt>Напряжение (вольты, В)</dt><dd>«Давление», которое толкает электричество по проводам. В розетке — около 230 В.</dd>
+   <dt>Ток (амперы, А)</dt><dd>Сколько электричества течёт по проводу. На схеме ток показан бегущими жёлтыми штрихами: чем быстрее бегут, тем ток больше.</dd>
    <dt>Сопротивление (омы, Ом)</dt><dd>Насколько провод или прибор мешает току. Ток = напряжение ÷ сопротивление (закон Ома).</dd>
    <dt>Мощность (ватты, Вт)</dt><dd>Мощность = напряжение × ток. Чайник на 2000 Вт при 230 В берёт около 9 А.</dd>
-   <dt>Нагрев</dt><dd>Ток нагревает провод, и чем он больше, тем сильнее нагрев (вдвое больше тока — вчетверо больше тепла). Домашний провод выдерживает около 16 А.</dd>
-   <dt>Обрыв</dt><dd>Цепь разорвана, ток не течёт, за обрывом 0 В.</dd>
-   <dt>Короткое замыкание</dt><dd>Ток идёт в обход приборов по пути почти без сопротивления, поэтому он огромный. Автомат выключается, чтобы спасти проводку.</dd>
-   <dt>Плохой контакт</dt><dd>Место с лишним сопротивлением: на нём теряется напряжение, оно греется, а свет мигает.</dd>
-   <dt>Фаза и ноль</dt><dd>Ток идёт к прибору по фазе (верхний провод) и возвращается по нулю (синий нижний). Без обратного пути ток не потечёт — цепь должна быть замкнута.</dd>
-   <dt>⚠️ Безопасность</dt><dd>Перед любым ремонтом — выключи автомат. В реальной жизни электрику доверяют только специалисту.</dd>
+   <dt>Нагрев</dt><dd>Ток нагревает провод: вдвое больше тока — вчетверо больше тепла. Домашний провод выдерживает около 16 А.</dd>
+   <dt>Распаечная коробка</dt><dd>Коробка в стене, где провода соединены скрутками. Большинство поломок — именно там.</dd>
+   <dt>Прозвонка</dt><dd>Проверка мультиметром при выключенном автомате. Около 0 Ом между фазой и нулём — короткое замыкание. Разъединяя скрутки в коробках, можно понять, в какой части линии КЗ.</dd>
+   <dt>Обрыв</dt><dd>Цепь разорвана, ток не течёт, после неисправной коробки 0 В.</dd>
+   <dt>Короткое замыкание</dt><dd>Фаза коснулась нуля, ток идёт мимо приборов и становится огромным. Автомат выключается, чтобы спасти проводку.</dd>
+   <dt>Плохой контакт</dt><dd>Разболтанный или окисленный контакт с лишним сопротивлением: на нём теряется напряжение, он греется, свет мигает.</dd>
+   <dt>Инструменты</dt><dd>🔩 шуруповёрт — крышки коробок · 🪛 отвёртка — винты клемм · ✂️ кусачки — откусить повреждённое · 🗜️ плоскогубцы — скрутить провода · 🧹 щётка — очистить контакты · 🩹 изолента — заизолировать.</dd>
+   <dt>⚠️ Безопасность</dt><dd>Перед ремонтом выключи автомат и проверь мультиметром, что напряжения нет. В реальной жизни электрику доверяют только специалисту.</dd>
   </dl>
   <div class="row"><button class="big" id="hb">Понятно</button></div>`);
   $('hb').onclick=()=>{ if(back) back(); else {hide(); G.state=prev;} };
@@ -698,6 +801,8 @@ function tone(f,d,type,v,slide,delay){
 function sfx(n){
   if(n==='click') tone(700,.05,'square',.025);
   else if(n==='beep') tone(1300,.06,'sine',.05);
+  else if(n==='work'){tone(180,.25,'sawtooth',.02,260);}
+  else if(n==='found'){tone(440,.12,'triangle',.06);tone(330,.18,'triangle',.06,null,.12);}
   else if(n==='zap'){tone(140,.4,'sawtooth',.1,40);tone(2200,.2,'square',.04,300);}
   else if(n==='trip'){tone(220,.25,'square',.08,60);}
   else if(n==='fix'){tone(660,.1,'sine',.06);tone(990,.15,'sine',.06,null,.1);}
