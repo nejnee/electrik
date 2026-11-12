@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Электрик-спасатель</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--panel:#151b24;--panel2:#1c2430;--line:#2a3442;--text:#e6edf3;--muted:#8b98a8;--accent:#ffcc33;--danger:#ff4d4d;--ok:#3ddc84;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Rubik,system-ui,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);background:#0f141b;flex-wrap:wrap}
+.logo{font-weight:800;font-size:18px}
+.logo span{color:var(--accent)}
+.lvl{color:var(--muted);font-size:14px}
+.stats{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:14px}
+.stat.warn{color:var(--danger);border-color:#6a2626}
+button{font-family:inherit;cursor:pointer}
+.hbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:14px}
+.hbtn:hover{border-color:#4a5c74}
+.wrap{display:grid;grid-template-columns:270px 1fr;gap:14px;padding:14px;max-width:1440px;margin:0 auto}
+aside{display:flex;flex-direction:column;gap:12px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.box h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600}
+.tools{display:flex;flex-direction:column;gap:6px}
+.tool{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1.5px solid var(--line);color:var(--text);border-radius:10px;padding:7px 10px;text-align:left;font-size:14px}
+.tool .ic{font-size:20px;width:26px;text-align:center}
+.tool small{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+.tool .k{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+.tool.active{border-color:var(--accent);background:#2a2614}
+.tool.on{border-color:#ff8a1f;background:#2b1c10}
+.tool.disabled{display:none}
+.meter{background:#0a0e13;border:2px solid #333d4a;border-radius:12px;padding:10px}
+.lcd{background:#a9c48a;color:#16210c;border-radius:6px;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;text-align:right;min-height:50px;box-shadow:inset 0 2px 6px rgba(0,0,0,.35)}
+.meter .mode{font-size:11px;color:var(--muted);margin-top:6px;font-family:'JetBrains Mono',monospace}
+.meter .expl{font-size:13px;margin-top:5px;line-height:1.4;min-height:36px}
+.goals{list-style:none;margin:0;padding:0;font-size:13px;display:flex;flex-direction:column;gap:5px}
+.goals li{display:flex;gap:7px}
+.goals li .m{width:16px;flex:none}
+.goals li.ok{color:var(--ok)}
+.board{background:radial-gradient(ellipse at top,#172231,#0d1117 75%);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.board.thermal{background:#05070c}
+svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
+.log{font-size:13.5px;color:var(--muted);min-height:48px;display:flex;flex-direction:column;gap:3px;margin-top:10px;padding:0 4px}
+.log .new{color:var(--text)}
+.log .bad{color:#ff8a8a}
+.log .good{color:var(--ok)}
+.hint-btn{width:100%}
+.ov{position:fixed;inset:0;background:rgba(5,8,12,.8);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;backdrop-filter:blur(3px)}
+.ov.hidden{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;max-width:860px;width:100%;padding:24px 26px;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.card h1{margin:0 0 6px;font-size:30px}
+.card h2{margin:0 0 4px;font-size:23px}
+.card .sub{color:var(--muted);margin-bottom:10px}
+.card p{line-height:1.5;margin:8px 0}
+.lesson{background:#1a2230;border-left:4px solid var(--accent);border-radius:8px;padding:11px 14px;margin:12px 0;line-height:1.55;font-size:14.5px}
+.lesson b{color:var(--accent)}
+.big{background:var(--accent);color:#1b1500;border:none;border-radius:12px;padding:12px 22px;font-size:16px;font-weight:700}
+.big:hover{filter:brightness(1.08)}
+.big.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.levels{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:14px}
+.lvbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px;text-align:left}
+.lvbtn:hover{border-color:var(--accent)}
+.lvbtn b{display:block;font-size:15px;margin-bottom:3px}
+.lvbtn span{font-size:12px;color:var(--muted)}
+.lvbtn.done{border-color:#2f6a45}
+.lvbtn.done b::after{content:" ✓";color:var(--ok)}
+.flash{position:fixed;inset:0;pointer-events:none;z-index:40;opacity:0;transition:opacity .3s}
+.cheat dt{font-weight:700;color:var(--accent);margin-top:12px}
+.cheat dd{margin:3px 0 0;line-height:1.5;color:#cfd8e3}
+.hit,.nodec,.clk{cursor:pointer}
+.smoke circle{transform-box:fill-box;transform-origin:center;animation:smoke 1.5s ease-out infinite}
+.smoke circle:nth-child(2){animation-delay:.5s}
+.smoke circle:nth-child(3){animation-delay:1s}
+@keyframes smoke{0%{transform:translateY(0) scale(.6);opacity:.85}100%{transform:translateY(-34px) scale(1.8);opacity:0}}
+.thermal .loadg{opacity:.4}
+@media (max-width:880px){.wrap{grid-template-columns:1fr}aside{order:2}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚡ Электрик-<span>спасатель</span></div>
+  <div class="lvl" id="lvlName"></div>
+  <div class="stats">
+    <div class="stat" id="timer">⏱ 0:00</div>
+    <div class="stat" id="lives">❤️❤️❤️</div>
+    <div class="stat" id="score">★ 0</div>
+    <button class="hbtn" id="helpBtn">📘 Справка</button>
+    <button class="hbtn" id="menuBtn">☰ Уровни</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="box">
+      <h3>Инструменты</h3>
+      <div class="tools" id="tools"></div>
+    </div>
+    <div class="box">
+      <h3>Мультиметр</h3>
+      <div class="meter">
+        <div class="lcd" id="lcd">—</div>
+        <div class="mode" id="lcdMode">&nbsp;</div>
+        <div class="expl" id="lcdExpl">Выбери прибор и щёлкни по схеме.</div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>Задача</h3>
+      <ul class="goals" id="goals"></ul>
+    </div>
+    <button class="hbtn hint-btn" id="hintBtn">💡 Подсказка (−10 с)</button>
+  </aside>
+  <main>
+    <div class="board" id="board"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="log" id="log"></div>
+  </main>
+</div>
+
+<div class="ov" id="ov"><div class="card" id="card"></div></div>
+<div class="flash" id="flash"></div>
+
+<script>
+// ===== Физика =====
+const E=230, RINT=0.25, RSEG=0.15, RLOOSE=0.9, RSHORT=0.05, IMAX=16, ITRIP=63, REPAIR_T=2.5;
+const LT={
+  lamp:{n:'Лампа',ic:'💡',P:60},
+  tv:{n:'Телевизор',ic:'📺',P:120},
+  fridge:{n:'Холодильник',ic:'🧊',P:150},
+  kettle:{n:'Чайник',ic:'🫖',P:2000},
+  heater:{n:'Обогреватель',ic:'♨️',P:2000},
+  micro:{n:'Микроволновка',ic:'🍿',P:1200},
+  pc:{n:'Компьютер',ic:'💻',P:300},
+  washer:{n:'Стиралка',ic:'🧺',P:2000},
+  fen:{n:'Фен',ic:'💨',P:1200},
+};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+
+const LEVELS=[
+{title:'Тёмная спальня',tag:'Обрыв провода',time:90,tools:['volt','repair'],
+ story:'23:40, звонок: «В спальне не горит свет и не работает телевизор!» Похоже, где-то в стене оборвался провод.',
+ lesson:`<b>Напряжение</b> похоже на давление воды в трубе: от щитка в провод «давит» 230 вольт (В).<br>Если провод <b>оборван</b>, за обрывом давления нет, и мультиметр покажет <b>0 В</b>.<br><br>🔍 Возьми мультиметр и щёлкай по кружочкам-точкам на проводе слева направо. Обрыв там, где 230 В сменяется на 0.<br>🔧 Чтобы заменить кусок провода, щёлкни по нему ремонтом.<br>⚠️ <b>Сначала выключи автомат</b> на щитке (зелёный рычажок), иначе ударит током. После ремонта включи его обратно.`,
+ recap:'Обрыв находят по напряжению: до обрыва оно есть, после — ноль. И никогда не чини провод под напряжением.',
+ make:()=>[{room:'Спальня',n:4,loads:[['lamp',2,1],['tv',4,1]],fault:{type:'break',seg:rnd(0,3)}}]},
+
+{title:'Искры на кухне',tag:'Короткое замыкание',time:100,tools:['volt','repair','thermal'],
+ story:'На кухне что-то хлопнуло, запахло гарью, и автомат выбило. Свет на кухне погас.',
+ lesson:`<b>Короткое замыкание (КЗ)</b>: изоляция повредилась, и ток пошёл в обход приборов, прямо в обратный провод. Сопротивление на этом пути почти нулевое, поэтому <b>ток огромный</b> — сотни ампер. Автомат это чувствует и выключается.<br><br>⚠️ <b>Не включай автомат, пока не починишь!</b> От каждого включения провод раскаляется ещё сильнее, а на втором-третьем будет пожар.<br><br>🌡️ Включи <b>тепловизор</b>. Огромный ток шёл от щитка до места замыкания, поэтому эти провода горячие, а дальше — холодные. Повреждён <b>последний горячий</b> участок, он самый горячий.`,
+ recap:'При КЗ ток идёт «коротким путём» мимо приборов и становится огромным. Повреждённое место выдаёт себя нагревом.',
+ make:()=>[{room:'Коридор',n:3,loads:[['lamp',3,1]]},
+           {room:'Кухня',n:5,loads:[['lamp',1,1],['fridge',3,1],['kettle',5,0,0]],fault:{type:'short',seg:rnd(1,3)},tripped:true}]},
+
+{title:'Все включили сразу',tag:'Перегрузка',time:100,tools:['volt','amp','repair','thermal'],
+ story:'К соседям пришли гости. На кухне одновременно работают чайник, обогреватель и микроволновка… а провода начинают теплеть.',
+ lesson:`<b>Ток</b> — это сколько электричества протекает по проводу, его меряют в амперах (А). Каждый прибор берёт свой ток: <b>мощность = напряжение × ток</b>. Чайнику на 2000 Вт нужно около 9 А.<br><br>Провод в доме рассчитан на <b>16 А</b>. Если ток больше, провод <b>греется</b>, а старые пробки в этом доме на перегрузку не реагируют.<br><br>🧲 <b>Клещами</b> измерь ток в проводе. Выключи лишние приборы кнопкой рядом с ними. Приборы со звёздочкой ★ жильцам нужны, их оставь.`,
+ recap:'Токи всех включённых приборов складываются. Больше 16 А провод не выдержит, поэтому мощные приборы лучше не включать вместе на одной линии.',
+ make:()=>[{room:'Кухня',n:5,loads:[['lamp',1,1],['kettle',2,1],['heater',3,0],['micro',4,0],['fridge',5,1]],preheat:30},
+           {room:'Комната',n:3,loads:[['lamp',2,1],['pc',3,0]]}]},
+
+{title:'Мигающий свет',tag:'Плохой контакт',time:120,tools:['volt','amp','repair','thermal'],
+ story:'«В гостиной мигает свет, а из розетки пахнет пластиком». Где-то ослаб контакт.',
+ lesson:`<b>Сопротивление</b> — это то, насколько провод мешает току. У исправного провода оно крошечное. Если контакт ослаб, сопротивление растёт, и на этом месте <b>теряется напряжение и выделяется тепло</b>. Свет мигает, а контакт может расплавиться.<br><br>🔍 Измерь мультиметром две соседние точки. На исправном участке напряжение падает примерно на 1 В, а на плохом — на несколько вольт.<br>🌡️ Тепловизор тоже покажет горячее место.<br>💡 Если греется слишком быстро, выключи мощный прибор: меньше ток — меньше нагрев.`,
+ recap:'Нагрев зависит и от тока, и от сопротивления. Плохой контакт — частая причина пожаров в старых домах.',
+ make:()=>[{room:'Коридор',n:3,loads:[['lamp',2,1]]},
+           {room:'Гостиная',n:5,loads:[['lamp',1,1],['tv',3,1],['heater',5,1]],fault:{type:'loose',seg:rnd(0,3)}},
+           {room:'Детская',n:4,loads:[['lamp',2,1],['pc',4,0]]}]},
+
+{title:'Ночная смена',tag:'Всё сразу',time:210,tools:['volt','amp','repair','thermal'],
+ story:'Худшая ночь в доме: обрыв, замыкание, перегрузка и плохой контакт одновременно. Первым делом займись тем, что греется!',
+ lesson:`Тут пригодится всё, что ты уже знаешь:<br>• <b>Обрыв</b>: после него 0 В.<br>• <b>КЗ</b>: автомат выбило, провода до места замыкания горячие.<br>• <b>Перегрузка</b>: ток больше 16 А, выключи лишнее.<br>• <b>Плохой контакт</b>: большое падение напряжения на одном участке и нагрев.<br><br>Расставь приоритеты: то, что может загореться, — первым делом.`,
+ recap:'Ты прошёл полную смену электрика! Обрыв, КЗ, перегрузка и плохой контакт — главные неисправности домашней проводки.',
+ make:()=>[{room:'Спальня',n:4,loads:[['lamp',2,1],['tv',4,1]],fault:{type:'break',seg:rnd(0,3)}},
+           {room:'Кухня',n:5,loads:[['lamp',1,1],['kettle',2,1],['heater',3,0],['micro',4,0],['fridge',5,1]],preheat:15},
+           {room:'Ванная',n:4,loads:[['lamp',1,1],['washer',3,1],['fen',4,0,0]],fault:{type:'short',seg:rnd(1,2)},tripped:true},
+           {room:'Гостиная',n:4,loads:[['lamp',1,1],['tv',2,1],['heater',4,1]],fault:{type:'loose',seg:rnd(0,3)}}]},
+];
+
+const G={state:'menu',br:[],tool:'volt',thermal:false,score:0,marks:[],logs:[],done:loadDone()};
+function loadDone(){try{return JSON.parse(localStorage.getItem('elec_done')||'[]')}catch(e){return []}}
+function saveDone(){try{localStorage.setItem('elec_done',JSON.stringify(G.done))}catch(e){}}
+
+const segR=s=>s.loose?RLOOSE:RSEG;
+
+function buildBranch(d){
+  const b={room:d.room,n:d.n,breaker:!d.tripped,segs:[],loads:[],V:[],Iseg:[],path:[],I:0,Rin:Infinity,tripFlash:0,noff:0};
+  for(let k=0;k<d.n;k++) b.segs.push({open:false,short:false,loose:false,heat:d.preheat||0,repair:0,off:0});
+  d.loads.forEach(([t,node,req,on])=>b.loads.push({t,node,req:!!req,on:on===undefined?true:!!on,R:E*E/LT[t].P,V:0,I:0}));
+  if(d.fault){
+    const s=b.segs[d.fault.seg];
+    if(d.fault.type==='break') s.open=true; else s[d.fault.type]=true;
+    if(d.fault.type==='short'){ for(let k=0;k<=d.fault.seg;k++) b.segs[k].heat=42; s.heat=58; }
+  }
+  return b;
+}
+
+function solve(){
+  for(const b of G.br){
+    const n=b.n, gsh=new Array(n+1).fill(0);
+    for(const L of b.loads) if(L.on) gsh[L.node]+=1/L.R;
+    for(let k=0;k<n;k++) if(b.segs[k].short) gsh[k+1]+=1/RSHORT;
+    const Rd=new Array(n+1);
+    Rd[n]=gsh[n]>0?1/gsh[n]:Infinity;
+    for(let k=n-1;k>=0;k--){
+      const s=b.segs[k];
+      const p=s.open?Infinity:segR(s)+Rd[k+1];
+      b.path[k]=p;
+      const g=(p===Infinity?0:1/p)+gsh[k];
+      Rd[k]=g>0?1/g:Infinity;
+    }
+    b.Rin=b.breaker?Rd[0]:Infinity;
+  }
+  let Gt=0; for(const b of G.br) if(b.Rin<Infinity) Gt+=1/b.Rin;
+  G.Vbus=E/(1+RINT*Gt);
+  for(const b of G.br){
+    b.V[0]=b.breaker?G.Vbus:0;
+    for(let k=0;k<b.n;k++){
+      const s=b.segs[k], p=b.path[k];
+      const I=p===Infinity?0:b.V[k]/p;
+      b.Iseg[k]=I;
+      b.V[k+1]=s.open?0:b.V[k]-I*segR(s);
+    }
+    for(const L of b.loads){L.V=L.on?b.V[L.node]:0; L.I=L.on?L.V/L.R:0;}
+    b.I=b.Iseg[0]||0;
+  }
+}
+
+// ===== Игровой цикл =====
+function tick(dt){
+  solve();
+  let tripped=false;
+  for(const b of G.br){
+    if(b.breaker && b.I>ITRIP){
+      for(let k=0;k<b.n;k++) if(b.Iseg[k]>ITRIP) b.segs[k].heat+=22+(b.segs[k].short?10:0);
+      b.breaker=false; b.tripFlash=1.2; tripped=true;
+      log(`💥 Автомат «${b.room}» выбило! Ток был ${b.I.toFixed(0)} А — это короткое замыкание.`,'bad');
+      sfx('trip'); flash('rgba(255,220,120,.35)'); clearMarks();
+    }
+  }
+  if(tripped) solve();
+  for(const b of G.br){
+    b.segs.forEach((s,k)=>{
+      const I=b.Iseg[k]||0;
+      const target=60*(I/IMAX)**2*(segR(s)/RSEG);
+      const rate=target>s.heat?0.03:0.012;
+      s.heat+=(target-s.heat)*Math.min(1,rate*dt);
+      if(s.heat>65 && !G.warned[b.room+k]){G.warned[b.room+k]=1; log(`🌡️ Провод на линии «${b.room}» сильно нагрелся!`,'bad');}
+      if(s.heat>=100 && G.state==='play') lose('fire',b,k);
+      if(s.repair>0 && G.state==='play'){
+        if(b.V[k]>50){ s.repair=0; shock(b); }
+        else { s.repair+=dt; if(s.repair>=REPAIR_T) finishRepair(b,s); }
+      }
+    });
+  }
+  if(G.state!=='play') return;
+  G.t-=dt;
+  if(G.t<=0){G.t=0; lose('time'); return;}
+  const g=goals();
+  if(g.every(x=>x.ok)){ G.winT+=dt; if(G.winT>1.2) win(); } else G.winT=0;
+}
+
+function goals(){
+  const out=[];
+  out.push({t:'Все автоматы включены',ok:G.br.every(b=>b.breaker)});
+  for(const b of G.br) for(const L of b.loads) if(L.req)
+    out.push({t:`${LT[L.t].ic} ${LT[L.t].n} — ${b.room}`,ok:L.on&&L.V>195});
+  out.push({t:'Ток в каждой линии ≤ 16 А',ok:G.br.every(b=>b.I<=IMAX+0.3)});
+  out.push({t:'Скрытые неисправности устранены',ok:!G.br.some(b=>b.segs.some(s=>s.open||s.short||s.loose))});
+  return out;
+}
+
+function finishRepair(b,s){
+  const had=s.open||s.short||s.loose;
+  s.open=s.short=s.loose=false; s.heat=Math.min(s.heat,8); s.repair=0;
+  if(had){log(`✅ Провод на линии «${b.room}» заменён — неисправность устранена!`,'good'); sfx('fix');}
+  else log(`🔧 Провод заменён, но он был исправен. Время потрачено зря.`);
+  clearMarks();
+}
+
+function shock(b){
+  G.lives--; flash('rgba(190,225,255,.75)'); sfx('zap');
+  log(`⚡ Удар током! Провод на линии «${b.room}» под напряжением. Сначала выключи автомат!`,'bad');
+  if(G.lives<=0) lose('shock');
+}
+
+// ===== Рисование =====
+const NS='http://www.w3.org/2000/svg';
+const svg=document.getElementById('svg');
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function txt(s,attrs,parent){const e=el('text',attrs,parent);e.textContent=s;return e;}
+const R={};
+const XS=210, XE=900;
+const xNode=(b,k)=>XS+k*(XE-XS)/b.n;
+
+function buildSVG(){
+  svg.innerHTML='';
+  const rowH=150, H=40+G.br.length*rowH;
+  svg.setAttribute('viewBox',`0 0 1000 ${H}`);
+  const defs=el('defs',{},svg);
+  const f=el('filter',{id:'glow',x:'-100%',y:'-100%',width:'300%',height:'300%'},defs);
+  el('feGaussianBlur',{stdDeviation:'7'},f);
+  el('rect',{x:14,y:14,width:112,height:H-28,rx:12,fill:'#1a212b',stroke:'#2f3a48'},svg);
+  txt('ЩИТОК',{x:70,y:36,'text-anchor':'middle',fill:'#8b98a8','font-size':11,'font-weight':600,'letter-spacing':2},svg);
+  txt('⚡',{x:70,y:62,'text-anchor':'middle','font-size':20},svg);
+  R.busV=txt('230 В',{x:70,y:82,'text-anchor':'middle',fill:'#ffcc33','font-size':13,'font-family':'JetBrains Mono'},svg);
+  const yFirst=75, yLast=75+(G.br.length-1)*rowH;
+  el('line',{x1:118,y1:52,x2:118,y2:yLast,stroke:'#c8794a','stroke-width':5,'stroke-linecap':'round'},svg);
+  el('line',{x1:100,y1:52,x2:118,y2:52,stroke:'#c8794a','stroke-width':5},svg);
+  R.rows=[];
+  const main=el('g',{},svg);
+  G.br.forEach((b,i)=>{
+    const y=yFirst+i*rowH, yN=y+78, r={segs:[],loads:[],y};
+    R.rows.push(r);
+    const g=el('g',{},main);
+    txt(b.room,{x:XS,y:y-30,fill:'#e6edf3','font-size':15,'font-weight':700},g);
+    txt('фаза',{x:XE+66,y:y+4,fill:'#6b7889','font-size':10},g);
+    txt('ноль',{x:XE+66,y:yN+4,fill:'#4d7bb3','font-size':10},g);
+    el('line',{x1:118,y1:y,x2:138,y2:y,stroke:'#c8794a','stroke-width':5},g);
+    el('line',{x1:186,y1:y,x2:XS,y2:y,stroke:'#c8794a','stroke-width':5},g);
+    // ноль
+    el('line',{x1:126,y1:yN,x2:XE+60,y2:yN,stroke:'#2f5f9c','stroke-width':3},g);
+    r.nflow=el('line',{x1:126,y1:yN,x2:XE+60,y2:yN,stroke:'#9cc8ff','stroke-width':2,'stroke-dasharray':'4 14',opacity:0},g);
+    // автомат
+    const bg=el('g',{class:'clk','data-kind':'brk','data-b':i},g);
+    r.brk=el('rect',{x:138,y:y-22,width:48,height:44,rx:7,fill:'#1f3b2a',stroke:'#3ddc84','stroke-width':2},bg);
+    el('rect',{x:156,y:y-16,width:12,height:32,rx:3,fill:'#0b0f14'},bg);
+    r.lever=el('rect',{x:153,y:y-16,width:18,height:14,rx:3,fill:'#3ddc84'},bg);
+    txt('А'+(i+1),{x:162,y:y+36,'text-anchor':'middle',fill:'#8b98a8','font-size':10},g);
+    // приборы (под проводами)
+    b.loads.forEach((L,li)=>{
+      const x=xNode(b,L.node), cy=y+39, lt=LT[L.t];
+      const lg=el('g',{class:'loadg'},g);
+      el('line',{x1:x,y1:y,x2:x,y2:yN,stroke:'#56667a','stroke-width':2.5},lg);
+      const glow=el('circle',{cx:x,cy,r:26,fill:L.t==='lamp'?'#ffd84a':'#7fe0ff',filter:'url(#glow)',opacity:0},lg);
+      const hb=el('g',{class:'clk','data-kind':'load','data-b':i,'data-l':li},lg);
+      const body=el('circle',{cx:x,cy,r:20,fill:'#222c38',stroke:'#56667a','stroke-width':2},hb);
+      txt(lt.ic,{x,y:cy+7,'text-anchor':'middle','font-size':20},hb);
+      if(L.req) txt('★',{x:x-21,y:cy-12,fill:'#ffcc33','font-size':14},lg);
+      txt(lt.n,{x,y:yN+17,'text-anchor':'middle',fill:'#aab6c4','font-size':11},lg);
+      txt(lt.P+' Вт',{x,y:yN+30,'text-anchor':'middle',fill:'#6b7889','font-size':10,'font-family':'JetBrains Mono'},lg);
+      const sw=el('g',{class:'clk','data-kind':'sw','data-b':i,'data-l':li},g);
+      const swr=el('rect',{x:x+25,y:cy-9,width:30,height:18,rx:9,fill:'#2a3442',stroke:'#3a4656'},sw);
+      const swk=el('circle',{cx:x+34,cy,r:6,fill:'#8b98a8'},sw);
+      r.loads.push({glow,body,swr,swk,x,cy});
+    });
+    // провода
+    b.segs.forEach((s,k)=>{
+      const x1=xNode(b,k), x2=xNode(b,k+1), mx=(x1+x2)/2;
+      const sg=el('g',{},g);
+      const base=el('line',{x1,y1:y,x2,y2:y,stroke:'#c8794a','stroke-width':6,'stroke-linecap':'round'},sg);
+      const flow=el('line',{x1:x1+8,y1:y,x2:x2-8,y2:y,stroke:'#fff1a8','stroke-width':2.4,'stroke-dasharray':'5 13',opacity:0},sg);
+      el('line',{x1:x1+8,y1:y,x2:x2-8,y2:y,stroke:'transparent','stroke-width':24,class:'hit','data-kind':'seg','data-b':i,'data-k':k},sg);
+      const smoke=el('g',{class:'smoke'},sg);
+      for(let j=0;j<3;j++) el('circle',{cx:mx+(j-1)*8,cy:y-8,r:6,fill:'#9aa3ad'},smoke);
+      const temp=txt('',{x:mx,y:y-14,'text-anchor':'middle','font-size':12,'font-family':'JetBrains Mono','font-weight':700},sg);
+      const bar=el('g',{},sg);
+      el('rect',{x:mx-30,y:y+11,width:60,height:6,rx:3,fill:'#2a3442'},bar);
+      const barF=el('rect',{x:mx-30,y:y+11,width:0,height:6,rx:3,fill:'#ffcc33'},bar);
+      r.segs.push({base,flow,smoke,temp,bar,barF});
+    });
+    // точки
+    for(let k=0;k<=b.n;k++){
+      el('circle',{cx:xNode(b,k),cy:y,r:8,fill:'#2b3644',stroke:'#a9b8ca','stroke-width':2,class:'nodec','data-kind':'node','data-b':i,'data-k':k},g);
+    }
+  });
+  R.marks=el('g',{'pointer-events':'none'},svg);
+  R.built=true;
+  renderMarks();
+}
+
+const HS=[[0,[29,59,138]],[.35,[47,182,201]],[.6,[242,212,60]],[.8,[255,138,31]],[1,[255,42,42]]];
+const rgb=c=>`rgb(${c.map(Math.round).join(',')})`;
+function heatColor(h){const t=Math.max(0,Math.min(1,h/100));for(let i=1;i<HS.length;i++){if(t<=HS[i][0]){const[a,ca]=HS[i-1],[bb,cb]=HS[i];const u=(t-a)/(bb-a);return rgb(ca.map((c,j)=>c+(cb[j]-c)*u));}}return rgb(HS[4][1]);}
+function copperColor(h){const u=Math.max(0,Math.min(1,(h-55)/45));const a=[200,121,74],b=[255,59,42];return rgb(a.map((c,j)=>c+(b[j]-c)*u));}
+
+function render(dt){
+  if(!R.built) return;
+  R.busV.textContent=G.Vbus.toFixed(0)+' В';
+  G.br.forEach((b,i)=>{
+    const r=R.rows[i], y=r.y;
+    if(b.tripFlash>0) b.tripFlash-=dt;
+    r.brk.setAttribute('fill',b.breaker?'#1f3b2a':'#3b1f1f');
+    r.brk.setAttribute('stroke',b.tripFlash>0&&Math.floor(b.tripFlash*8)%2?'#ffcc33':(b.breaker?'#3ddc84':'#c44'));
+    r.lever.setAttribute('y',b.breaker?y-16:y+2);
+    r.lever.setAttribute('fill',b.breaker?'#3ddc84':'#ff6b6b');
+    const flicker=b.segs.some((s,k)=>s.loose&&b.Iseg[k]>1);
+    b.segs.forEach((s,k)=>{
+      const sr=r.segs[k], I=b.Iseg[k]||0;
+      sr.base.setAttribute('stroke',G.thermal?heatColor(s.heat):copperColor(s.heat));
+      sr.base.setAttribute('stroke-width',G.thermal?10:6);
+      s.off+=Math.min(I,60)*dt*8;
+      sr.flow.setAttribute('stroke-dashoffset',(-s.off).toFixed(1));
+      sr.flow.setAttribute('opacity',I>0.02?Math.min(1,.3+I/14).toFixed(2):0);
+      sr.smoke.style.display=s.heat>70?'':'none';
+      sr.temp.style.display=G.thermal?'':'none';
+      sr.temp.textContent=Math.round(22+s.heat)+'°';
+      sr.temp.setAttribute('fill',heatColor(s.heat));
+      sr.bar.style.display=s.repair>0?'':'none';
+      sr.barF.setAttribute('width',(60*Math.min(1,s.repair/REPAIR_T)).toFixed(1));
+    });
+    b.noff+=Math.min(b.I,60)*dt*8;
+    r.nflow.setAttribute('stroke-dashoffset',b.noff.toFixed(1));
+    r.nflow.setAttribute('opacity',b.I>0.02?Math.min(1,.25+b.I/14).toFixed(2):0);
+    b.loads.forEach((L,li)=>{
+      const lr=r.loads[li];
+      let br=L.on?(L.V/E)**2:0;
+      if(flicker&&L.on&&L.node>0) br*=0.55+Math.random()*0.45;
+      lr.glow.setAttribute('opacity',(L.t==='lamp'?br:br*0.45).toFixed(2));
+      lr.body.setAttribute('stroke',!L.on?'#56667a':L.V>195?'#3ddc84':L.V>60?'#ffcc33':'#ff6b6b');
+      lr.swr.setAttribute('fill',L.on?'#1f5a36':'#2a3442');
+      lr.swk.setAttribute('cx',L.on?lr.x+46:lr.x+34);
+      lr.swk.setAttribute('fill',L.on?'#3ddc84':'#8b98a8');
+    });
+  });
+}
+
+function renderMarks(){
+  if(!R.marks) return;
+  R.marks.innerHTML='';
+  for(const m of G.marks){
+    const w=m.text.length*7.4+12;
+    const g=el('g',{},R.marks);
+    el('rect',{x:m.x-w/2,y:m.y-11,width:w,height:20,rx:5,fill:m.bg||'#a9c48a',stroke:'#0a0e13'},g);
+    txt(m.text,{x:m.x,y:m.y+4,'text-anchor':'middle','font-size':12,'font-family':'JetBrains Mono','font-weight':700,fill:'#16210c'},g);
+  }
+  if(G.fire){txt('🔥',{x:G.fire.x,y:G.fire.y,'text-anchor':'middle','font-size':54},R.marks);}
+}
+function addMark(key,x,y,text,bg){G.marks=G.marks.filter(m=>m.key!==key);G.marks.push({key,x,y,text,bg});renderMarks();}
+function clearMarks(){G.marks=[];renderMarks();}
+
+// ===== Измерения и клики =====
+const fV=v=>v.toFixed(1)+' В', fA=a=>a.toFixed(1)+' А';
+function setMeter(v,mode,expl){lcd.textContent=v;lcdMode.textContent=mode||' ';lcdExpl.innerHTML=expl||'';}
+
+function measureNode(bi,k){
+  const b=G.br[bi], V=b.V[k];
+  let ex;
+  if(!b.breaker) ex='0 В: автомат этой линии выключен, напряжения нет нигде.';
+  else if(V>200) ex='Напряжение есть: сюда электричество доходит нормально.';
+  else if(V>120) ex='Напряжение просело! Где-то очень большая нагрузка.';
+  else if(V>5) ex='Очень низкое напряжение — что-то серьёзно не так.';
+  else ex='0 В: сюда напряжение не доходит. Обрыв где-то левее!';
+  for(const nb of [k-1,k+1]){
+    if(nb<0||nb>b.n||!G.marks.find(m=>m.key===`n${bi}-${nb}`)) continue;
+    const d=Math.abs(b.V[Math.min(k,nb)]-b.V[Math.max(k,nb)]);
+    if(b.V[Math.max(k,nb)]<1 && b.V[Math.min(k,nb)]>100) ex+=`<br>📍 Между этой и соседней точкой напряжение пропадает — <b>здесь обрыв!</b>`;
+    else if(b.breaker) ex+=`<br>Падение на участке: <b>${d.toFixed(1)} В</b> ${d>4?'— подозрительно много! Плохой контакт?':'(норма — около 1–3 В)'}`;
+  }
+  setMeter(fV(V),'НАПРЯЖЕНИЕ · точка '+k+' · '+b.room,ex);
+  addMark(`n${bi}-${k}`,xNode(b,k),R.rows[bi].y-22,V.toFixed(V<10?1:0)+'В');
+  sfx('beep');
+}
+function measureSeg(bi,k){
+  const b=G.br[bi], I=b.Iseg[k]||0, x=(xNode(b,k)+xNode(b,k+1))/2;
+  let ex=I<0.05?'Ток не течёт: цепь разорвана или выключена.':I<=IMAX?'Ток в норме (провод рассчитан на 16 А).':`Больше нормы в 16 А! Провод будет <b>нагреваться</b>.`;
+  setMeter(fA(I),'ТОК · провод '+k+'–'+(k+1)+' · '+b.room,ex);
+  addMark(`s${bi}-${k}`,x,R.rows[bi].y+24,I.toFixed(1)+'А',I>IMAX?'#ffb08a':'#a9d3e8');
+  sfx('beep');
+}
+function measureLoad(bi,li,mode){
+  const b=G.br[bi], L=b.loads[li], lt=LT[L.t];
+  if(mode==='volt'){
+    const V=b.V[L.node];
+    setMeter(fV(V),'НАПРЯЖЕНИЕ · '+lt.n,V>195?'В розетке нормальное напряжение.':V>5?'Напряжение слишком низкое — прибор плохо работает.':'В розетке нет напряжения.');
+  } else {
+    const P=L.V*L.I;
+    setMeter(fA(L.I),'ТОК · '+lt.n,L.on?`Мощность = напряжение × ток = ${L.V.toFixed(0)} × ${L.I.toFixed(1)} ≈ <b>${P.toFixed(0)} Вт</b>`:'Прибор выключен — ток не потребляет.');
+  }
+  sfx('beep');
+}
+
+svg.addEventListener('click',e=>{
+  if(G.state!=='play') return;
+  const t=e.target.closest('[data-kind]'); if(!t) return;
+  const kind=t.dataset.kind, bi=+t.dataset.b, b=G.br[bi];
+  if(kind==='brk'){
+    b.breaker=!b.breaker; sfx('click'); clearMarks();
+    log(`Автомат «${b.room}» ${b.breaker?'включён':'выключен'}.`); solve(); return;
+  }
+  if(kind==='sw'){
+    const L=b.loads[+t.dataset.l]; L.on=!L.on; sfx('click'); clearMarks();
+    log(`${LT[L.t].ic} ${LT[L.t].n} (${b.room}) — ${L.on?'включён':'выключен'}.`); solve(); return;
+  }
+  const tool=G.tool;
+  if(kind==='node'){
+    const k=+t.dataset.k;
+    if(tool==='volt') measureNode(bi,k);
+    else setMeter('—','',tool==='amp'?'Клещами меряют ток в проводе — щёлкни по линии между точками.':'Ремонт делают на проводе — щёлкни по линии между точками.');
+  } else if(kind==='seg'){
+    const k=+t.dataset.k, s=b.segs[k];
+    if(tool==='amp') measureSeg(bi,k);
+    else if(tool==='repair'){
+      if(s.repair>0) return;
+      if(b.V[k]>50){shock(b);return;}
+      s.repair=0.001; sfx('click'); log(`🔧 Меняю провод на линии «${b.room}»…`);
+    } else setMeter('—','','Мультиметр меряет напряжение в точках — щёлкни по кружочку на проводе.');
+  } else if(kind==='load'){
+    const li=+t.dataset.l;
+    if(tool==='volt'||tool==='amp') measureLoad(bi,li,tool);
+    else log('Чтобы включить или выключить прибор, нажми на переключатель справа от него.');
+  }
+});
+
+// ===== Интерфейс =====
+const $=id=>document.getElementById(id);
+const lcd=$('lcd'), lcdMode=$('lcdMode'), lcdExpl=$('lcdExpl');
+const TOOLS=[
+ {id:'volt',ic:'🔍',n:'Мультиметр',d:'напряжение в точке',k:'1'},
+ {id:'amp',ic:'🧲',n:'Токовые клещи',d:'ток в проводе',k:'2'},
+ {id:'repair',ic:'🔧',n:'Замена провода',d:'только без напряжения!',k:'3'},
+ {id:'thermal',ic:'🌡️',n:'Тепловизор',d:'показывает нагрев',k:'T'},
+];
+function buildTools(){
+  const L=LEVELS[G.li]; const box=$('tools'); box.innerHTML='';
+  for(const t of TOOLS){
+    const b=document.createElement('button');
+    b.className='tool'+(L.tools.includes(t.id)?'':' disabled');
+    b.dataset.id=t.id;
+    b.innerHTML=`<span class="ic">${t.ic}</span><span>${t.n}<small>${t.d}</small></span><span class="k">${t.k}</span>`;
+    b.onclick=()=>pickTool(t.id);
+    box.appendChild(b);
+  }
+  updateTools();
+}
+function pickTool(id){
+  if(!LEVELS[G.li].tools.includes(id)) return;
+  if(id==='thermal'){G.thermal=!G.thermal;$('board').classList.toggle('thermal',G.thermal);}
+  else G.tool=id;
+  sfx('click'); updateTools();
+}
+function updateTools(){
+  document.querySelectorAll('.tool').forEach(b=>{
+    const id=b.dataset.id;
+    b.classList.toggle('active',id===G.tool);
+    b.classList.toggle('on',id==='thermal'&&G.thermal);
+  });
+  svg.style.cursor=G.tool==='repair'?'crosshair':'default';
+}
+document.addEventListener('keydown',e=>{
+  if(G.state!=='play') return;
+  const m={'1':'volt','2':'amp','3':'repair','t':'thermal','T':'thermal','е':'thermal','Е':'thermal','4':'thermal'}[e.key];
+  if(m) pickTool(m);
+});
+
+function log(msg,cls){
+  G.logs.unshift({msg,cls}); G.logs=G.logs.slice(0,4);
+  $('log').innerHTML=G.logs.map((l,i)=>`<div class="${i===0?'new ':''}${l.cls||''}">${l.msg}</div>`).join('');
+}
+function flash(c){const f=$('flash');f.style.background=c;f.style.transition='none';f.style.opacity=1;requestAnimationFrame(()=>{f.style.transition='opacity .5s';f.style.opacity=0;});}
+
+let hudT=0;
+function hud(dt){
+  hudT-=dt; if(hudT>0) return; hudT=0.2;
+  const t=Math.max(0,G.t||0), mm=Math.floor(t/60), ss=Math.floor(t%60);
+  $('timer').textContent=`⏱ ${mm}:${String(ss).padStart(2,'0')}`;
+  $('timer').classList.toggle('warn',t<20);
+  $('lives').textContent='❤️'.repeat(Math.max(0,G.lives))+'🖤'.repeat(Math.max(0,3-G.lives));
+  $('score').textContent='★ '+G.score;
+  if(G.br.length) $('goals').innerHTML=goals().map(g=>`<li class="${g.ok?'ok':''}"><span class="m">${g.ok?'✅':'⬜'}</span><span>${g.t}</span></li>`).join('');
+}
+
+$('hintBtn').onclick=()=>{
+  if(G.state!=='play') return;
+  G.t-=10;
+  let h=null;
+  for(const b of G.br) if(b.segs.some(s=>s.heat>55)&&!h){
+    if(b.I>IMAX) h=`🔥 Линия «${b.room}» перегружена (${b.I.toFixed(1)} А при норме 16 А). Выключи приборы без ★!`;
+    else if(b.segs.some(s=>s.loose)) h=`🔥 На линии «${b.room}» греется плохой контакт. Можно выключить мощный прибор, чтобы выиграть время.`;
+  }
+  if(!h) for(const b of G.br) if(b.I>IMAX+0.3){h=`Линия «${b.room}» перегружена (${b.I.toFixed(1)} А). Выключи необязательные приборы (без ★).`;break;}
+  if(!h) for(const b of G.br) if(b.segs.some(s=>s.short)){h=`На линии «${b.room}» короткое замыкание. Не включай автомат! Включи тепловизор 🌡️ и найди последний горячий участок.`;break;}
+  if(!h) for(const b of G.br) if(b.segs.some(s=>s.open)){h=`На линии «${b.room}» обрыв. Включи автомат и измерь мультиметром точки слева направо: где 230 В сменится на 0, там и обрыв.`;break;}
+  if(!h) for(const b of G.br) if(b.segs.some(s=>s.loose)){h=`На линии «${b.room}» плохой контакт. Измерь две соседние точки: на плохом участке большое падение напряжения. Или посмотри тепловизором.`;break;}
+  if(!h) h='Неисправностей больше нет! Включи все автоматы и обязательные приборы (★).';
+  log('💡 '+h);
+  setMeter(lcd.textContent,lcdMode.textContent,'💡 '+h);
+};
+
+// ===== Экраны =====
+const ov=$('ov'), card=$('card');
+function show(html){card.innerHTML=html;ov.classList.remove('hidden');}
+function hide(){ov.classList.add('hidden');}
+
+function menu(){
+  G.state='menu';
+  show(`<h1>⚡ Электрик-спасатель</h1>
+  <div class="sub">Игра про домашнюю проводку</div>
+  <p>Ты — дежурный электрик в старом доме. По ночам здесь то и дело что-то ломается: обрываются провода, случаются замыкания, кто-то включает всё сразу. Найди неисправность приборами, почини её и не дай дому загореться.</p>
+  <p style="color:var(--muted);font-size:14px">Знать физику заранее не нужно: каждый уровень коротко объясняет новое явление.</p>
+  <div class="levels">${LEVELS.map((L,i)=>`<button class="lvbtn ${G.done.includes(i)?'done':''}" data-i="${i}"><b>${i+1}. ${L.title}</b><span>${L.tag}</span></button>`).join('')}</div>
+  <div class="row"><button class="big" id="mDemo">▶ Как играть (видео)</button><button class="big ghost" id="mHelp">📘 Шпаргалка по физике</button></div>`);
+  card.querySelectorAll('.lvbtn').forEach(b=>b.onclick=()=>startLevel(+b.dataset.i));
+  $('mHelp').onclick=()=>help(menu);
+  $('mDemo').onclick=demo;
+}
+function demo(){
+  G.state='help';
+  show(`<h2>▶ Как пройти уровень 2 «Искры на кухне»</h2>
+  <p style="color:var(--muted);margin-top:0">Короткое замыкание: ищем место тепловизором, чиним при выключенном автомате, включаем свет.</p>
+  <video src="demo_level2.mp4" controls autoplay playsinline style="width:100%;border-radius:12px;border:1px solid var(--line);background:#000"></video>
+  <div class="row"><button class="big" id="dPlay">Играть уровень 2</button><button class="big ghost" id="dBack">Назад</button></div>`);
+  $('dPlay').onclick=()=>startLevel(1);
+  $('dBack').onclick=menu;
+}
+
+function startLevel(i){
+  G.li=i; const L=LEVELS[i];
+  G.br=L.make().map(buildBranch);
+  G.t=L.time; G.lives=3; G.marks=[]; G.fire=null; G.thermal=false; G.tool=L.tools[0]; G.winT=0; G.warned={}; G.logs=[];
+  $('board').classList.remove('thermal');
+  $('lvlName').textContent=`Уровень ${i+1}: ${L.title}`;
+  $('log').innerHTML='';
+  buildSVG(); buildTools(); solve();
+  setMeter('—','','Выбери прибор и щёлкни по схеме.');
+  hudT=0; hud(0);
+  G.state='card';
+  show(`<div class="sub">Уровень ${i+1} из ${LEVELS.length} · ${L.tag}</div>
+    <h2>${L.title}</h2>
+    <p>${L.story}</p>
+    <div class="lesson">${L.lesson}</div>
+    <p style="color:var(--muted);font-size:14px">⏱ Время: ${Math.floor(L.time/60)}:${String(L.time%60).padStart(2,'0')} · ❤️ 3 жизни · Жёлтые штрихи на проводах — это бегущий ток.</p>
+    <div class="row"><button class="big" id="go">Начать смену</button><button class="big ghost" id="back">К уровням</button></div>`);
+  $('go').onclick=()=>{hide();G.state='play';log('Смена началась. Удачи!');ac();};
+  $('back').onclick=menu;
+}
+
+function win(){
+  G.state='won'; sfx('win');
+  const L=LEVELS[G.li], pts=Math.round(G.t)*10+G.lives*100;
+  G.score+=pts; if(!G.done.includes(G.li)){G.done.push(G.li);saveDone();}
+  const last=G.li===LEVELS.length-1;
+  setTimeout(()=>{
+    show(`<h2>✅ ${last?'Смена окончена — дом спасён!':'Уровень пройден!'}</h2>
+      <p>Осталось времени: <b>${Math.round(G.t)} с</b> · жизней: <b>${G.lives}</b> · очки: <b>+${pts}</b> (всего ★ ${G.score})</p>
+      <div class="lesson"><b>Что ты узнал:</b> ${L.recap}</div>
+      <div class="row">${last?'':'<button class="big" id="next">Следующий уровень →</button>'}<button class="big ghost" id="again">Ещё раз</button><button class="big ghost" id="lv">К уровням</button></div>`);
+    if(!last) $('next').onclick=()=>startLevel(G.li+1);
+    $('again').onclick=()=>startLevel(G.li);
+    $('lv').onclick=menu;
+  },500);
+}
+
+function lose(reason,b,k){
+  if(G.state!=='play') return;
+  G.state='lost';
+  let title,text;
+  if(reason==='fire'){
+    sfx('zap'); flash('rgba(255,80,40,.6)');
+    G.fire={x:(xNode(b,k)+xNode(b,k+1))/2,y:R.rows[G.br.indexOf(b)].y+12}; renderMarks();
+    title='🔥 Пожар!';
+    const s=b.segs[k];
+    if(b.segs.some(x=>x.short)) text=`Провод на линии «${b.room}» раскалился от тока короткого замыкания. Каждое включение автомата при КЗ пропускает через провод сотни ампер. Сначала найди и почини повреждение, потом включай.`;
+    else if(s.loose) text=`Плохой контакт на линии «${b.room}» перегрелся. Чем больше сопротивление и ток, тем сильнее нагрев. Можно было выключить мощный прибор, чтобы выиграть время.`;
+    else text=`Линия «${b.room}» была перегружена: ток ${b.I.toFixed(1)} А при норме 16 А. Выключи лишние мощные приборы до того, как провод раскалится.`;
+  } else if(reason==='time'){title='⏰ Время вышло';text='Жильцы так и не дождались света. Попробуй ещё раз — неисправность каждый раз в новом месте.';}
+  else {title='⚡ Слишком много ударов током';text='В жизни это было бы смертельно опасно. Главное правило электрика: <b>перед ремонтом выключи автомат</b>.';}
+  setTimeout(()=>{
+    show(`<h2>${title}</h2><p>${text}</p><div class="row"><button class="big" id="again">Попробовать снова</button><button class="big ghost" id="lv">К уровням</button></div>`);
+    $('again').onclick=()=>startLevel(G.li);
+    $('lv').onclick=menu;
+  },1100);
+}
+
+function help(back){
+  const prev=G.state; G.state='help';
+  show(`<h2>📘 Шпаргалка по электричеству</h2>
+  <dl class="cheat">
+   <dt>Напряжение (вольты, В)</dt><dd>«Давление», которое толкает электричество по проводам. В розетке — около 230 В. Мультиметр показывает его в любой точке.</dd>
+   <dt>Ток (амперы, А)</dt><dd>Сколько электричества течёт по проводу — как количество воды в трубе. На схеме ток показан бегущими жёлтыми штрихами: чем быстрее бегут, тем ток больше.</dd>
+   <dt>Сопротивление (омы, Ом)</dt><dd>Насколько провод или прибор мешает току. Ток = напряжение ÷ сопротивление (закон Ома).</dd>
+   <dt>Мощность (ватты, Вт)</dt><dd>Мощность = напряжение × ток. Чайник на 2000 Вт при 230 В берёт около 9 А.</dd>
+   <dt>Нагрев</dt><dd>Ток нагревает провод, и чем он больше, тем сильнее нагрев (вдвое больше тока — вчетверо больше тепла). Домашний провод выдерживает около 16 А.</dd>
+   <dt>Обрыв</dt><dd>Цепь разорвана, ток не течёт, за обрывом 0 В.</dd>
+   <dt>Короткое замыкание</dt><dd>Ток идёт в обход приборов по пути почти без сопротивления, поэтому он огромный. Автомат выключается, чтобы спасти проводку.</dd>
+   <dt>Плохой контакт</dt><dd>Место с лишним сопротивлением: на нём теряется напряжение, оно греется, а свет мигает.</dd>
+   <dt>Фаза и ноль</dt><dd>Ток идёт к прибору по фазе (верхний провод) и возвращается по нулю (синий нижний). Без обратного пути ток не потечёт — цепь должна быть замкнута.</dd>
+   <dt>⚠️ Безопасность</dt><dd>Перед любым ремонтом — выключи автомат. В реальной жизни электрику доверяют только специалисту.</dd>
+  </dl>
+  <div class="row"><button class="big" id="hb">Понятно</button></div>`);
+  $('hb').onclick=()=>{ if(back) back(); else {hide(); G.state=prev;} };
+}
+$('helpBtn').onclick=()=>{ if(G.state==='play') help(); else if(G.state==='menu') help(menu); };
+$('menuBtn').onclick=()=>{ if(G.state!=='help') menu(); };
+
+// ===== Звук =====
+let AC=null;
+function ac(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC;}catch(e){return null;}}
+function tone(f,d,type,v,slide,delay){
+  const a=ac(); if(!a) return;
+  try{
+    const t0=a.currentTime+(delay||0), o=a.createOscillator(), g=a.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(f,t0);
+    if(slide) o.frequency.exponentialRampToValueAtTime(slide,t0+d);
+    g.gain.setValueAtTime(v||.06,t0); g.gain.exponentialRampToValueAtTime(.0001,t0+d);
+    o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+d+.02);
+  }catch(e){}
+}
+function sfx(n){
+  if(n==='click') tone(700,.05,'square',.025);
+  else if(n==='beep') tone(1300,.06,'sine',.05);
+  else if(n==='zap'){tone(140,.4,'sawtooth',.1,40);tone(2200,.2,'square',.04,300);}
+  else if(n==='trip'){tone(220,.25,'square',.08,60);}
+  else if(n==='fix'){tone(660,.1,'sine',.06);tone(990,.15,'sine',.06,null,.1);}
+  else if(n==='win'){[523,659,784,1046].forEach((f,i)=>tone(f,.18,'triangle',.07,null,i*.12));}
+}
+
+// ===== Запуск =====
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(G.state==='play') tick(dt);
+  else if(G.br.length) solve();
+  render(dt); hud(dt);
+  requestAnimationFrame(loop);
+}
+G.li=0; G.br=LEVELS[0].make().map(buildBranch); buildSVG(); buildTools(); solve();
+menu();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
